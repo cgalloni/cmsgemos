@@ -17,7 +17,7 @@ GEMCALIBRATION_VER_PATCH=0
 include $(BUILD_HOME)/$(Project)/config/mfDefsGEM.mk
 include $(BUILD_HOME)/$(Project)/config/mfPythonDefsGEM.mk
 
-Sources =CalibrationWeb.cc
+Sources =CalibrationWeb.cc Calibration.cc
 
 DynamicLibrary=gemcalibration
 
