@@ -53,7 +53,7 @@ namespace gem {
         void dacScanV3Selector(xgi::Output *out)
           throw (xgi::exception::Exception);
 //
-        void genericParamSelector_dacScan(std::string labelName, std::string paramName, int defaultValue, xgi::Output *out)
+        void genericParamSelector_dacScan( std::string paramName, int defaultValue, xgi::Output *out)
           throw (xgi::exception::Exception);
 
       protected:

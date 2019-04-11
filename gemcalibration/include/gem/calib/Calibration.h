@@ -25,7 +25,7 @@ namespace gem {
     typedef enum calType calType_t;
 
 
-    enum dacScanType {CFG_CAL_DAC}; 
+    enum dacScanType {CFG_CAL_DAC, CFG_BIAS_PRE_I_BIT, CFG_BIAS_PRE_I_BLCC, CFG_BIAS_PRE_I_BSF, CFG_BIAS_SH_I_BFCAS, CFG_BIAS_SH_I_BDIFF, CFG_BIAS_SD_I_BDIFF, CFG_BIAS_SD_I_BFCAS, CFG_BIAS_SD_I_BSF, CFG_BIAS_CFD_DAC_1, CFG_BIAS_CFD_DAC_2, CFG_HYST, CFG_THR_ARM_DAC, CFG_THR_ZCC_DAC, CFG_BIAS_PRE_VREF, CFG_VREF_ADC}; 
     typedef enum dacScanType dacScanType_t;
 
     
@@ -106,7 +106,6 @@ namespace gem {
 		{"trigType"  , 0},
 		{"vfatChMin" , 0},
 		{"vfatChMax" , 127},
-		{"vt2"       , 0},
 		}},
             {TRIMDAC  , {
 		{"nSamples"   , 0}, 
@@ -116,13 +115,13 @@ namespace gem {
                 {"pulseDelay" , 40},
                 {"latency"    , 33},
 		{"mspl"       , 4},
-		{"trimValues" , 0},// TODO: need to be implemented properly as taking array of numbers 
+		{"trimValues" , 3},// TODO: need to be implemented properly in the back end in order to get a given number of points {-63,0,63}
                                    // TODO: need to implement interaction with DB to get proper configurations per ARM DAC
 		}},
 	    {DACSCANV3  ,{
-	       {"nSamples",0},
+	       {"nSamples",100},
 	       {"adcType",0},
-	       {"dacScanType",0},	   
+		 //{"dacScanType",0},	   
 	      }},// TODO: drop down with DACs to select to scan on, and a select all button
 	    {CALIBRATEARMDAC,{
 	       {"nSamples"  , 100},
@@ -131,10 +130,13 @@ namespace gem {
                {"pulseDelay", 40},
                {"latency"   , 33},
                {"armDacList" , 0},// TODO: need to be implemented properly as taking array of numbers 
-            
                {"calPhase"  , 0}, 
 	       }}  
         };
+
+	std::vector<std::string> m_scanParamsNonFormSelector{"trigType","signalSourceType","comparatorType","adcType","dacScanType" }; //TODO :HOW TO USE IT?
+
+	
 	std::map< std::string,std::string > m_scanParamsLabels{
 	  {"nSamples"  , "Number of samples"},
 	  {"l1aTime"   , "L1A period (BX)"},
@@ -151,20 +153,46 @@ namespace gem {
 	  {"timeInterval", "Interval bw measur. (s)"},
 	  {"rates", "Rates (Hz)"} , // TODO: need to be implemented properly as taking array of numbers
 	  {"armDacList", "List of ARM DAC settings to scan"}, // TODO: need to be implemented properly as taking array of numbers
-	  {"trimValues", "Points in DAC range"}, // TODO: need to be implemented properly as taking array of numbers
+	  {"trimValues", "Points in dac range (odd)"}, // TODO:need to be implemented properly in the back end in order to get a given number of points {-63,0,63}
 	    };
         std::map<std::string, uint32_t> amc_optical_links;
 
 	dacScanType_t m_dacScanType;
 	std::map<dacScanType_t,  std::map<std::string, uint32_t>> m_dacScanTypeParams{
-	  {CFG_CAL_DAC,{
-	      {"CFG_CAL_DAC_Min"  , 0},
-	      {"CFG_CAL_DAC_Max"  , 250},
-		}},
+	  {CFG_CAL_DAC,{{"CFG_CAL_DAC_Min"  , 0},{"CFG_CAL_DAC_Max", 255},}},
+	  {CFG_BIAS_PRE_I_BIT, {{"CFG_BIAS_PRE_I_BIT_Min",0},{"CFG_BIAS_PRE_I_BIT_Max", 255},}},
+	  {CFG_BIAS_PRE_I_BLCC,{{"CFG_BIAS_PRE_I_BLCC_Min", 0},{"CFG_BIAS_PRE_I_BLCC_Max", 63},}},
+	  {CFG_BIAS_PRE_I_BSF,{{"CFG_BIAS_PRE_I_BSF_Min",0}, {"CFG_BIAS_PRE_I_BSF_Max", 63},}},
+	  {CFG_BIAS_SH_I_BFCAS,{{"CFG_BIAS_SH_I_BFCAS_Min",0},{"CFG_BIAS_SH_I_BFCAS_Max", 255},}},
+	  {CFG_BIAS_SH_I_BDIFF,{{"CFG_BIAS_SH_I_BDIFF_Min", 0},{"CFG_BIAS_SH_I_BDIFF_Max", 255},}},
+	  {CFG_BIAS_SD_I_BDIFF,{{"CFG_BIAS_SD_I_BDIFF_Min",0},{"CFG_BIAS_SD_I_BDIFF_Max",255},}},
+	  {CFG_BIAS_SD_I_BFCAS,{{"CFG_BIAS_SD_I_BFCAS_Min",0},{"CFG_BIAS_SD_I_BFCAS_Max", 255}, }},
+	  {CFG_BIAS_SD_I_BSF,{{"CFG_BIAS_SD_I_BSF_Min",0}, {"CFG_BIAS_SD_I_BSF_Max", 63},}},
+	  {CFG_BIAS_CFD_DAC_1,{{"CFG_BIAS_CFD_DAC_1_Min",0},{"CFG_BIAS_CFD_DAC_1_Max", 63},}},
+	  {CFG_BIAS_CFD_DAC_2,{{"CFG_BIAS_CFD_DAC_2_Min", 0},{"CFG_BIAS_CFD_DAC_2_Max", 63},}},
+	  {CFG_HYST,{{"CFG_HYST_Min",0},{"CFG_HYST_Max", 63},}},
+	  {CFG_THR_ARM_DAC,{{"CFG_THR_ARM_DAC_Min",0},{"CFG_THR_ARM_DAC_Max", 255},}},
+	  {CFG_THR_ZCC_DAC,{{"CFG_THR_ZCC_DAC_Min",0}, {"CFG_THR_ZCC_DAC_Max", 255},}},
+	  {CFG_BIAS_PRE_VREF,{{"CFG_BIAS_PRE_VREF_Min",0},{"CFG_BIAS_PRE_VREF_Max", 255},}},  
+	  {CFG_VREF_ADC, {{"CFG_VREF_ADC_Min",0},{"CFG_VREF_ADC_Max", 3},}}
 	    };
 	std::map<dacScanType_t,  std::string > m_dacScanTypeParams_label{
 	  {CFG_CAL_DAC, "CFG_CAL_DAC"},
-       
+	  {CFG_BIAS_PRE_I_BIT, "CFG_BIAS_PRE_I_BIT"},
+	  {CFG_BIAS_PRE_I_BLCC, "CFG_BIAS_PRE_I_BLCC"},
+	  {CFG_BIAS_PRE_I_BSF, "CFG_BIAS_PRE_I_BSF"},
+	  {CFG_BIAS_SH_I_BFCAS,"CFG_BIAS_SH_I_BFCAS"},
+	  {CFG_BIAS_SH_I_BDIFF, "CFG_BIAS_SH_I_BDIFF"},
+	  {CFG_BIAS_SD_I_BDIFF, "CFG_BIAS_SD_I_BDIFF"},
+	  {CFG_BIAS_SD_I_BFCAS, "CFG_BIAS_SD_I_BFCAS"},
+	  {CFG_BIAS_SD_I_BSF, "CFG_BIAS_SD_I_BSF"},
+	  {CFG_BIAS_CFD_DAC_1,"CFG_BIAS_CFD_DAC_1"},
+	  {CFG_BIAS_CFD_DAC_2,"CFG_BIAS_CFD_DAC_2"},
+	  {CFG_HYST,"CFG_HYST"},
+	  {CFG_THR_ARM_DAC,"CFG_THR_ARM_DAC"},
+	  {CFG_THR_ZCC_DAC, "CFG_THR_ZCC_DAC"},
+	  {CFG_BIAS_PRE_VREF,"CFG_BIAS_PRE_VREF"},
+	  {CFG_VREF_ADC, "CFG_VREF_ADC"},
 	};
 	
 
