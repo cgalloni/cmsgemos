@@ -16,7 +16,7 @@
 
 #define NAMC 12
 #define NSHELF 2
-#define NDACSCAN 1 //19
+
 
 namespace gem {
   namespace calib {
@@ -43,7 +43,7 @@ namespace gem {
 
         virtual void actionPerformed(xdata::Event& event);
 
-	    // void startMonitoring();
+	// void startMonitoring();
 
         //void stopMonitoring();
 
@@ -69,7 +69,7 @@ namespace gem {
         calType_t m_calType;
 
         std::map<calType_t, std::map<std::string, uint32_t>> m_scanParams{
-            {GBTPHASE  ,{{"nSamples",0},{"trigType", 0},}},
+            {GBTPHASE  ,{{"nSamples",100},{"trigType", 0},}},
             {LATENCY,{
                 {"nSamples"  , 100},
                 {"trigType"  , 0},
@@ -95,22 +95,22 @@ namespace gem {
                 {"calPhase"  , 0},
                 }},
 	    {SBITARMDACSCAN  ,{
-		{"nSamples",0},
+		{"nSamples", 100},
 		{"comparatorType",0},
 		{"perChannelType",0},
 		{"vfatChMin" , 0},
 		{"vfatChMax" , 127},
 		}},
 	    {ARMDACSCAN  ,{
-		{"nSamples"  , 0},
+		{"nSamples"  , 100},
 		{"trigType"  , 0},
 		{"vfatChMin" , 0},
 		{"vfatChMax" , 127},
 		}},
             {TRIMDAC  , {
-		{"nSamples"   , 0}, 
+		{"nSamples"   , 100}, 
 		{"trigType"   , 0}, // TODO: TTC local should be only possible one
-		{"nSamples"   , 0},
+		{"nSamples"   , 100},
 		{"l1aTime"    , 250},
                 {"pulseDelay" , 40},
                 {"latency"    , 33},
@@ -121,38 +121,51 @@ namespace gem {
 	    {DACSCANV3  ,{
 	       {"nSamples",100},
 	       {"adcType",0},
-		 //{"dacScanType",0},	   
-	      }},// TODO: drop down with DACs to select to scan on, and a select all button
+	      }},
 	    {CALIBRATEARMDAC,{
 	       {"nSamples"  , 100},
 	       {"trigType"  , 0}, // TODO: TTC local should be only possible one
                {"l1aTime"   , 250},
                {"pulseDelay", 40},
                {"latency"   , 33},
-               {"armDacList" , 0},// TODO: need to be implemented properly as taking array of numbers 
-               {"calPhase"  , 0}, 
+               {"calPhase"  , 0},
+		 // TODO: need to take the list of te ARM dac from a file
 	       }}  
         };
 
-	std::vector<std::string> m_scanParamsNonFormSelector{"trigType","signalSourceType","comparatorType","adcType","dacScanType" }; //TODO :HOW TO USE IT?
-
+	struct  scanParamsRadioSelector{
+	  //std::string name;
+	  
+	  std::string label;
+	  std::vector<std::string>  radio_options;
+	  
+	};
+	
+    
+	std::map<std::string, scanParamsRadioSelector> m_scanParamsRadioSelector{
+	  {"trigType",
+	      {"TriggerType", {"TTC input","Loopback","Lemo/T3"}}},
+	      {"signalSourceType", {"Signal Source", {"Calibration Pulse","Particle"}}},
+	      {"comparatorType", {"Coparator Type", {"CDF","Arming comparator"}}},
+	      {"adcType", {"VFAT ADC reference", {"Internal","External"}}},
+	      {"perChannelType", {"DAC scan per channel", {"False","True"}}},
+	    };
+	std::set <std::string> m_scanParamsNonForm  {"trigType", "signalSourceType", "signalSourceType", "comparatorType", "adcType", "perChannelType", "dacScanType" };
+      
 	
 	std::map< std::string,std::string > m_scanParamsLabels{
 	  {"nSamples"  , "Number of samples"},
 	  {"l1aTime"   , "L1A period (BX)"},
-	  {"calPhase"  , "CalPulse phase ()"},
+	  {"calPhase"  , "CalPulse phase"},
           {"mspl"      , "Pulse stretch (int)"},
-	  {"scanMin"   , "Scan min ()"},
-          {"scanMax"   , "Scan max ()"},
+	  {"scanMin"   , "Scan min"},
+          {"scanMax"   , "Scan max"},
           {"vfatChMin" , "VFAT Ch min"},
           {"vfatChMax" , "VAT Ch max"},
           {"vt2"       , "CFG_THR_ARM_DAC"},
           {"trigThrottle"  , "Trigger throttle (int)"},
 	  {"pulseDelay", "Pulse delay (BX)"},
 	  {"latency"   , "Latency (BX)"},
-	  {"timeInterval", "Interval bw measur. (s)"},
-	  {"rates", "Rates (Hz)"} , // TODO: need to be implemented properly as taking array of numbers
-	  {"armDacList", "List of ARM DAC settings to scan"}, // TODO: need to be implemented properly as taking array of numbers
 	  {"trimValues", "Points in dac range (odd)"}, // TODO:need to be implemented properly in the back end in order to get a given number of points {-63,0,63}
 	    };
         std::map<std::string, uint32_t> amc_optical_links;

@@ -137,10 +137,6 @@ void gem::calib::Calibration::applyAction(xgi::Input* in, xgi::Output* out)
         it.second = cgi[it.first]->getIntegerValue();
         CMSGEMOS_DEBUG("Calibration::applyAction : " << it.first << " = " << it.second);
     }
-    // for (auto it: m_dacScanTypeParams.find(m_dacScanType)->second){
-    //     it.second = cgi[it.first]->getIntegerValue();
-    //     CMSGEMOS_DEBUG("Calibration::applyAction m_dacScanType: " << it.first << " = " << it.second);
-    // }
     
     std::stringstream t_stream;
     t_stream.clear();
