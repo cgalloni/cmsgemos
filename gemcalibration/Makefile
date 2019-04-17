@@ -17,9 +17,6 @@ GEMCALIBRATION_VER_PATCH=0
 
 include $(BUILD_HOME)/$(Project)/config/mfDefsGEM.mk
 include $(BUILD_HOME)/$(Project)/config/mfPythonDefsGEM.mk
-include $(XDAQ_ROOT)/config/Makefile.rules
-include $(BUILD_HOME)/$(Project)/config/mfRPMDefsGEM.mk
-
 
 Sources =CalibrationWeb.cc Calibration.cc
 
@@ -38,6 +35,9 @@ UserCCFlags +=$(PYTHONCFLAGS)
 DependentLibraryDirs+=$(XHAL_ROOT)/lib
 DependentLibraries+=xhal
 DependentLibraries+=boost_iostreams
+
+include $(XDAQ_ROOT)/config/Makefile.rules
+include $(BUILD_HOME)/$(Project)/config/mfRPMDefsGEM.mk
 
 
 print-env:
