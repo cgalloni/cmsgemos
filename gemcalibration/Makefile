@@ -6,23 +6,38 @@ Project=cmsgemos
 ShortProject=gem
 Package=gemcalibration
 LongPackage=gemcalibration
+
 ShortPackage=calib
-PackageName=calibration
+PackageName=calib
+
 
 GEMCALIBRATION_VER_MAJOR=0
-GEMCALIBRATION_VER_MINOR=0
+GEMCALIBRATION_VER_MINOR=2
 GEMCALIBRATION_VER_PATCH=0
 
 include $(BUILD_HOME)/$(Project)/config/mfDefsGEM.mk
+include $(BUILD_HOME)/$(Project)/config/mfPythonDefsGEM.mk
+include $(XDAQ_ROOT)/config/Makefile.rules
+include $(BUILD_HOME)/$(Project)/config/mfRPMDefsGEM.mk
 
-Sources =version.cc
 
+Sources =CalibrationWeb.cc Calibration.cc
+
+Sources +=version.cc
 DynamicLibrary=gemcalibration
 
 IncludeDirs+=$(BUILD_HOME)/$(Project)/$(Package)/include
+IncludeDirs+=$(BUILD_HOME)/$(Project)/gembase/include
+IncludeDirs+=$(BUILD_HOME)/$(Project)/gemutils/include
+IncludeDirs+=$(XHAL_ROOT)/include
 
-include $(XDAQ_ROOT)/config/Makefile.rules
-include $(BUILD_HOME)/$(Project)/config/mfRPMDefsGEM.mk
+#DependentLibraryDirs+=/opt/xhal/lib
+UserCFlags  +=$(PYTHONCFLAGS)
+UserCCFlags +=$(PYTHONCFLAGS)
+
+DependentLibraryDirs+=$(XHAL_ROOT)/lib
+DependentLibraries+=xhal
+DependentLibraries+=boost_iostreams
 
 
 print-env:
