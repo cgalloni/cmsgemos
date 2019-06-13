@@ -26,6 +26,7 @@ DynamicLibrary=gemcalibration
 IncludeDirs+=$(BUILD_HOME)/$(Project)/$(Package)/include
 IncludeDirs+=$(BUILD_HOME)/$(Project)/gembase/include
 IncludeDirs+=$(BUILD_HOME)/$(Project)/gemutils/include
+IncludeDirs+=$(BUILD_HOME)/$(Project)/gemsupervisor/include  #to get apps for SOAP
 IncludeDirs+=$(XHAL_ROOT)/include
 
 #DependentLibraryDirs+=/opt/xhal/lib

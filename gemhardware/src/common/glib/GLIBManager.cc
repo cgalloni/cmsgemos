@@ -19,10 +19,13 @@
 #include "gem/hw/utils/GEMCrateUtils.h"
 
 #include "xoap/MessageReference.h"
+//#include "xoap/filter/MessageFilter.h"
 #include "xoap/MessageFactory.h"
 #include "xoap/SOAPEnvelope.h"
 #include "xoap/SOAPConstants.h"
 #include "xoap/SOAPBody.h"
+#include "xoap/SOAPElement.h"
+#include "xdata/soap/Serializer.h" 
 #include "xoap/Method.h"
 #include "xoap/AttachmentPart.h"
 #include "xoap/domutils.h"
@@ -89,6 +92,10 @@ gem::hw::glib::GLIBManager::GLIBManager(xdaq::ApplicationStub* stub) :
   // p_gemMonitor      = new gem::hw::glib::GLIBHwMonitor(this);
   CMSGEMOS_DEBUG("GLIBManager::done");
 
+  //CG: SOAP/XSOAP binding attempt to retrieve a message
+  xoap::bind(this, &gem::hw::glib::GLIBManager::calibrateAction, "calibrateAction", XDAQ_NS_URI);
+
+  
   // set up the info hwCfgInfoSpace
   init();
 
@@ -784,6 +791,66 @@ void gem::hw::glib::GLIBManager::resetAction(toolbox::Event::Reference e)
   throw (toolbox::fsm::exception::Exception) {
 }
 
+xoap::MessageReference gem::hw::glib::GLIBManager::calibrateAction(xoap::MessageReference msg) {
+
+    CMSGEMOS_INFO("GLIBManager::calibrateAction start*****");
+    std::cout << "Message: " << std::endl;
+    msg->writeTo(std::cout);
+    //CMSGEMOS_INFO("GLIBManager::calibrateAction msg is "<< msg.toString());
+    std::string commandName = "calibrateAction";
+    if (msg.isNull()) {
+        CMSGEMOS_INFO("GLIBManager::calibrateAction Null message received!");
+        XCEPT_RAISE(xoap::exception::Exception,"Null message received!");
+    }
+    CMSGEMOS_INFO("GLIBManager::calibrateAction message received");
+
+    
+
+    std::cout<< "GLIBManager::calibrateAction checking the elements size " << msg->getSOAPPart().getEnvelope().getBody().getChildElements().size()<< std::endl;
+   
+
+    for (auto li: msg->getSOAPPart().getEnvelope().getBody().getChildElements() ) {
+        CMSGEMOS_INFO("GLIBManager::calibrateAction looping over msg element");
+        xoap::SOAPName name = (li).getElementName();
+        std::cout << "Name: " << name.getLocalName() << ", namespace: " << name.getURI()
+                  << std::endl;
+        // Check if the element has children and print them up to one layer down
+        std::vector<xoap::SOAPElement> children = (li).getChildElements();
+        std::vector<xoap::SOAPElement>::iterator vi;
+        xdata::soap::Serializer serializer;
+        for (vi = children.begin(); vi != children.end(); ++vi)
+            {
+                xoap::SOAPName childName = (*vi).getElementName();
+                std::cout << " --> Child name: " << childName.getLocalName()  <<" value : "<< (*vi).getValue() << " DOM "<< (*vi).getDOM() << std::endl;
+                if (childName.getLocalName()=="calType") {
+                    xdata::Integer attempt;
+                    CMSGEMOS_INFO("GLIBManager::calibrateAction  trying to run calibation : "<< (*vi).getValue()) ;
+                    try
+                        {
+                            serializer.import(&attempt, (*vi).getDOM());
+                        }
+                    catch(xcept::Exception& err)
+                        {
+                            CMSGEMOS_INFO("GLIBManager::calibrateAction failing to load parameter  : "<< childName.getLocalName() ) ;
+                             std::string const msg =
+                                 toolbox::toString("Failed to import SOAP command parameter '%s': '%s'.",
+                                                   childName.getLocalName().c_str(),
+                                                   err.message().c_str());
+                             CMSGEMOS_ERROR( msg);
+                        }
+
+                    if (attempt == gem::calib::calType::LATENCY) {
+                        CMSGEMOS_INFO("GLIBManager::calibrateAction  trying to run calibation it is a LATENCY scan");
+                    }
+                }
+            }
+    }
+
+    CMSGEMOS_INFO("GLIBManager::calibrateAction returning answer");
+    return 
+        gem::utils::soap::GEMSOAPToolBox::makeSOAPReply(commandName, "Calibrated");
+    
+}
 
 void gem::hw::glib::GLIBManager::createGLIBInfoSpaceItems(is_toolbox_ptr is_glib, glib_shared_ptr glib)
 {
