@@ -13,6 +13,22 @@
 #include "gem/utils/soap/GEMSOAPToolBox.h"
 #include "gem/utils/exception/Exception.h"
 
+#include "gem/calib/GEMCalibEnums.h"
+#include "xdata/Bag.h"
+#include "xdata/Boolean.h"
+#include "xdata/Integer.h"
+#include "xdata/Integer32.h"
+#include "xdata/Integer64.h"
+#include "xdata/UnsignedShort.h"
+#include "xdata/UnsignedLong.h"
+#include "xdata/UnsignedInteger32.h"
+#include "xdata/UnsignedInteger64.h"
+#include "xdata/String.h"
+#include "xdata/Float.h"
+#include "xdata/Double.h"
+#include "xdata/Vector.h"
+
+
 namespace gem {
   namespace hw {
     namespace glib {
@@ -58,6 +74,7 @@ namespace gem {
             throw (toolbox::fsm::exception::Exception);
 
           virtual void resetAction(toolbox::Event::Reference e)
+
             throw (toolbox::fsm::exception::Exception) override;
 
         protected:

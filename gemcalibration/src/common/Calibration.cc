@@ -43,6 +43,8 @@ gem::calib::Calibration::Calibration(xdaq::ApplicationStub* stub) :
   
     xgi::bind(this, &Calibration::applyAction, "applyAction");
     xgi::bind(this, &Calibration::setCalType, "setCalType");
+
+   
 }
 
 gem::calib::Calibration::~Calibration()
@@ -79,8 +81,8 @@ void gem::calib::Calibration::applyAction(xgi::Input* in, xgi::Output* out)
     bool t_errorsOccured = false;
     cgicc::Cgicc cgi(in);
     for (auto it: m_scanParams.find(m_calType)->second) {
-        it.second = cgi[it.first]->getIntegerValue();
-        CMSGEMOS_DEBUG("Calibration::applyAction : " << it.first << " = " << it.second);
+        it.second = cgi[it.first]->getValue();
+        CMSGEMOS_DEBUG("Calibration::applyAction for calibration "<< m_calType <<" : " << it.first << " = " << it.second);
     }
     
     std::stringstream t_stream;
@@ -126,6 +128,8 @@ void gem::calib::Calibration::applyAction(xgi::Input* in, xgi::Output* out)
             if (checked) {
                 it.second.min = cgi[it.second.label+"_Min"]->getIntegerValue();
                 it.second.max = cgi[it.second.label+"_Max"]->getIntegerValue();
+
+                CMSGEMOS_DEBUG("Calibration::applyAction DAC SCAN V3 for calibration: checked "<< it.second.label << " with par  min" << it.second.min << " max " << it.second.max);
             }
         }
     }
@@ -139,6 +143,49 @@ void gem::calib::Calibration::applyAction(xgi::Input* in, xgi::Output* out)
     }
     
 
+
+    /////CG:
+   
+    std::set<xdaq::ApplicationDescriptor*> used;
+    std::set<std::string> groups = p_appZone->getGroupNames();
+    for (auto i =groups.begin(); i != groups.end(); ++i) {
+        CMSGEMOS_INFO("GEMCalibration:::init::xDAQ group: " << *i
+                       << "getApplicationGroup() " << p_appZone->getApplicationGroup(*i)->getName());
+        
+        xdaq::ApplicationGroup* ag = const_cast<xdaq::ApplicationGroup*>(p_appZone->getApplicationGroup(*i));
+#ifdef x86_64_centos7
+        std::set<const xdaq::ApplicationDescriptor*> allApps = ag->getApplicationDescriptors();
+#else
+        std::set<xdaq::ApplicationDescriptor*> allApps = ag->getApplicationDescriptors();
+#endif
+        //CMSGEMOS_INFO("GEMCalibration::init::getApplicationDescriptors() " << allApps.size());
+
+        for (auto j = allApps.begin(); j != allApps.end(); ++j) {
+            std::string classname = (*j)->getClassName();
+            
+            if (((*j)->getClassName()).rfind("GLIBManager") != std::string::npos) {
+                       
+                xdaq::ApplicationDescriptor* app=(xdaq::ApplicationDescriptor*) *j;
+                std::string command = "calibrateAction"; 
+                initializeCalibConfigMap( &calibConfigMap, &calibTypeConfigMap);
+                
+                fillCalibConfigMap(m_calType,&calibConfigMap);
+               
+                //printCalibConfigMap(&calibConfigMap);
+                fillCalibTypeConfigMap(m_calType,&calibTypeConfigMap);
+                 std::unordered_map<std::string, xdata::Serializable*> bagFromMap;
+                xdata::Integer calType= m_calType;
+                bagFromMap.insert(std::make_pair("calType",    &(calType)));        
+                fillBagFromConfigMap(&bagFromMap,&calibConfigMap,&calibTypeConfigMap);
+               
+                CMSGEMOS_INFO("GEMCalibration::applying action sending SOAP message to GLIB Manager with unordered bag");
+                gem::utils::soap::GEMSOAPToolBox::sendCommandWithParameterBag(command, bagFromMap, p_appContext, p_appDescriptor, app);
+                
+            }
+                    
+        }
+    }
+        
 }
 
 void gem::calib::Calibration::setCalType(xgi::Input* in, xgi::Output* out)
@@ -158,3 +205,74 @@ void gem::calib::Calibration::setCalType(xgi::Input* in, xgi::Output* out)
         break;
     }
 }
+
+
+void gem::calib::Calibration::initializeCalibConfigMap(std::map<std::string, xdata::Integer>* calibConfigMap, std::map<std::string,xdata::String>* calibTypeConfigMap) {
+    for (auto const  &element : m_scanParams ){
+        for (auto it : element.second) {
+            
+            if(it.first.find("armDac")!=std::string::npos || it.first.find("trimValues")!=std::string::npos) {
+                std::map<std::string,xdata::String>::iterator iterStr;
+                iterStr = calibTypeConfigMap->find(it.first);
+                if (iterStr==calibTypeConfigMap->end()){
+                    calibTypeConfigMap->insert( std::pair <std::string,xdata::String> (it.first, "") );
+                  
+                }else {
+                    calibTypeConfigMap->find(it.first)->second= "";
+                
+                }
+            }else{
+
+                std::map<std::string,xdata::Integer>::iterator iter;
+                iter = calibConfigMap->find(it.first);
+                if (iter==calibConfigMap->end()){
+                    calibConfigMap->insert( std::pair <std::string,xdata::Integer> (it.first, 0) );
+                    
+                }else {
+                    calibConfigMap->find(it.first)->second= 0;
+                }
+            }
+        }
+    }
+     
+}
+
+
+void gem::calib::Calibration::fillCalibConfigMap(calType_t cal, std::map<std::string, xdata::Integer>* calibConfigMap) {
+   
+    for ( auto it: m_scanParams.find(cal)->second ) {
+        if (it.first.find("armDac")!=std::string::npos || it.first.find("trimValues")!=std::string::npos) continue;
+        (calibConfigMap->find(it.first))->second =  std::stoi(it.second.c_str());
+        
+    }
+}
+
+void gem::calib::Calibration::fillCalibTypeConfigMap(calType_t cal, std::map<std::string, xdata::String>* calibTypeConfigMap) {
+    
+    for ( auto it: m_scanParams.find(cal)->second ) {
+        if (it.first.find("armDac")!=std::string::npos || it.first.find("trimValues")!=std::string::npos) {
+         calibTypeConfigMap->find(it.first)->second = it.second;
+        }
+    }
+}
+
+void gem::calib::Calibration::printCalibConfigMap(  std::map<std::string, xdata::Integer>* calibConfigMap ) {
+     std::map<std::string,xdata::Integer>::iterator iter;
+     std::cout <<" Printing CalibConfigMap "<< std::endl;
+     for ( iter = calibConfigMap->begin(); iter != calibConfigMap->end() ;++iter ) {
+         std::cout <<" iter->first "<<iter->first << " second " << iter->second.toString()<< std::endl;
+    }
+}
+       
+ void gem::calib::Calibration::fillBagFromConfigMap( std::unordered_map<std::string, xdata::Serializable*>* bag, std::map<std::string, xdata::Integer>* calibConfigMap, std::map<std::string, xdata::String>* calibTypeConfigMap) {
+    
+    std::map<std::string,xdata::Integer>::iterator iter;
+    for ( iter = calibConfigMap->begin(); iter != calibConfigMap->end() ;++iter ) {
+        bag->insert(std::make_pair(iter->first,    &(iter->second)));
+    }
+    std::map<std::string,xdata::String>::iterator iterStr;
+    for ( iterStr = calibTypeConfigMap->begin(); iterStr != calibTypeConfigMap->end() ;++iterStr ) {
+        bag->insert(std::make_pair(iterStr->first,    &(iterStr->second)));  
+    }
+}
+

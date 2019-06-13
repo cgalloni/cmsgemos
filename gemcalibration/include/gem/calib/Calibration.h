@@ -13,6 +13,24 @@
 #include "gem/utils/exception/Exception.h"
 #include "gem/calib/GEMCalibEnums.h"
 
+//CG for SOAP
+//#include "gem/supervisor/GEMSupervisor.h"
+
+#include "xdata/Bag.h"
+#include "xdata/Boolean.h"
+#include "xdata/Integer.h"
+#include "xdata/Integer32.h"
+#include "xdata/Integer64.h"
+#include "xdata/UnsignedShort.h"
+#include "xdata/UnsignedLong.h"
+#include "xdata/UnsignedInteger32.h"
+#include "xdata/UnsignedInteger64.h"
+#include "xdata/String.h"
+#include "xdata/Float.h"
+#include "xdata/Double.h"
+#include "xdata/Vector.h"
+
+
 
 namespace gem {
     namespace calib {
@@ -31,6 +49,8 @@ namespace gem {
 
             virtual void actionPerformed(xdata::Event& event);
 
+
+            
             void applyAction(xgi::Input *in, xgi::Output *out)
                 throw (xgi::exception::Exception);
 
@@ -188,25 +208,61 @@ namespace gem {
                 {CFG_BIAS_PRE_VREF,{"CFG_BIAS_PRE_VREF", 0, 255}},
                 {CFG_VREF_ADC,{"CFG_VREF_ADC", 0, 3}}
             };
-         
 
-        protected:
+            std::map<std::string,xdata::Integer> calibConfigMap ;
+            std::map<std::string,xdata::String> calibTypeConfigMap;
+            
+            void initializeCalibConfigMap(std::map<std::string, xdata::Integer>* calibConfigMap, std::map<std::string,xdata::String>* calibConfigTypeMap);
+            
+            void fillCalibConfigMap(calType_t calType,std::map<std::string,xdata::Integer>* calibConfigMap);
+            void printCalibConfigMap(std::map<std::string, xdata::Integer>* calibConfigMap);
+            
+            void fillCalibTypeConfigMap(calType_t calType,std::map<std::string,xdata::String>* calibConfigTypeMap);
+            
+            void fillBagFromConfigMap( std::unordered_map<std::string, xdata::Serializable*>* bag, std::map<std::string, xdata::Integer>* calibConfigMap, std::map<std::string, xdata::String>* calibTypeConfigMap);
+                
+         
 
         private:
    
             xdata::Integer m_nShelves;
-
+            
+             
             const std::map<std::string, calType_t> m_calTypeSelector{
                 {"GBT Phase Scan"                , GBTPHASE},
-                {"Latency Scan"                  , LATENCY},
-                {"S-curve Scan"                  , SCURVE},
-                {"S-bit ARM DAC Scan"            , SBITARMDACSCAN},
-                {"ARM DAC Scan"                  , ARMDACSCAN},
-                {"Derive DAC Trim Registers"     , TRIMDAC},
-                {"DAC Scan on VFAT3"             , DACSCANV3},
-                {"Calibrate CFG_THR_ARM_DAC"     , CALIBRATEARMDAC},
-            };
+                    {"Latency Scan"                  , LATENCY},
+                        {"S-curve Scan"                  , SCURVE},
+                            {"S-bit ARM DAC Scan"            , SBITARMDACSCAN},
+                                {"ARM DAC Scan"                  , ARMDACSCAN},
+                                    {"Derive DAC Trim Registers"     , TRIMDAC},
+                                        {"DAC Scan on VFAT3"             , DACSCANV3},
+                                            {"Calibrate CFG_THR_ARM_DAC"     , CALIBRATEARMDAC},
+                                                };
+            
+            
+        protected:
+            //CG borrowed from GEMSupervisor.hGEMSupervisor.h for SOAP 
+            /* std::vector<xdaq::ApplicationDescriptor*> v_supervisedApps; */
+            /* std::vector<std::vector<xdaq::ApplicationDescriptor*> > getInitializationOrder(); */
+            /* int initPriority(const std::string& classname); */
+            //CG borrowed from GEMSupervisor.hGEMSupervisor.h for SOAP 
+
+            /*xdata::Bag<LatencyConfig> m_LatencyConfig;*/
+
+            /* class LatencyConfig */
+            /* { */
+            /* public: */
+            /*     LatencyConfig(); */
+            /*     void registerFields(xdata::Bag<Calibration::LatencyConfig>* bag); */
+
+ 
+            /*     // configuration parameters */
+
+            // Calibration configuration
+        
         };
+        
+        
     }  // namespace gem::calib
 }  // namespace gem
 
