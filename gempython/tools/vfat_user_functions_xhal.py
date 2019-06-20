@@ -38,6 +38,10 @@ class HwVFAT(object):
         self.confVFAT3s.argTypes = [ c_uint, c_uint ]
         self.confVFAT3s.restype = c_uint
 
+        self.confCalPulse = self.parentOH.parentAMC.lib.confCalPulse
+        self.confCalPulse.argTypes = [ c_uint, c_uint, c_uint, c_bool, c_bool, c_uint ]
+        self.confCalPulse.restype = c_uint 
+
         # Get all channel regs
         self.getChannelRegistersVFAT3 = self.parentOH.parentAMC.lib.getChannelRegistersVFAT3
         self.getChannelRegistersVFAT3.argTypes = [ c_uint, c_uint, POINTER(c_uint32) ]
@@ -105,6 +109,16 @@ class HwVFAT(object):
             self.writeAllVFATs(key,self.paramsDefVals[key],mask)
 
         return
+
+    def configureCalPulseAllVFATs(self, ch, toggleOn, mask=0x0, currentPulse=False,  calScaleFactor=0x0):
+        """
+        Function documentation goes here
+        """
+        
+        # FIXME
+        # some check on the validity of the input arguments may be required
+
+        return self.confCalPulse(self.parentOH.link, ch, toggleOn, currentPulse, calScaleFactor)
 
     def configureDACMonitor(self, dacSelect, mask=0x0):
         """
