@@ -265,7 +265,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # Required Parameters
-    parser.add_argument("amcMask", help="Slot mask to apply, a 1 in the n^th bit indicates the n^th slot should be considered", type=parseInt)
+    parser.add_argument("amcMask", help="Slot mask to apply, a 1 in the N^th bit indicates the (N+1)^th slot should be considered", type=parseInt)
     runTypeGroup = parser_trim.add_mutually_exclusive_group(required=True)
     runTypeGroup.add_argument("--latScan", help="Perform a latency scan using the calibration module", action="store_true")
     runTypeGroup.add_argument("--scurve", help="Take an scurve scan", action="store_true")
