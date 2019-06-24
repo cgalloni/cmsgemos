@@ -135,7 +135,7 @@ def trackingDataScan(args, runType):
     from gempython.utils.nesteddict import nesteddict as ndict
     dict_vfatBoards = ndict() # dict_vfatBoards[slot] = HwVFAT(args.shelf,slot, dummyLink) for this (args.shelf,slot)
     dict_ohMasks = ndict() # dict_ohMasks[slot] = ohMask for this (args.shelf,slot)
-    dict_vfatMask = ndict() #dict_vfatMask[slot][link] = vfatmask for this (args.shelf,slot,link)
+    dict_vfatMasks = ndict() #dict_vfatMasks[slot][link] = vfatmask for this (args.shelf,slot,link)
 
     # Create an AMC13 class object and stop triggers
     import amc13, os
@@ -178,21 +178,21 @@ def trackingDataScan(args, runType):
             dict_vfatBoards[thisSlot].setVFATMSPLAll(mask=dict_vfatMasks[thisSlot][ohN], mspl=args.pulseStretch)
             dict_vfatBoards[thisSlot].setVFATCalPhaseAll(mask=dict_vfatMasks[thisSlot][ohN], phase =args.calPhase)
             if runType == 0x2: # Only for Latency scan
-                dict_vfatBoards[thisSlot].setVFATCalHeightAll(mask=dict_vfatMasks[thisSlot][ohN], currentPulse=False)
+                dict_vfatBoards[thisSlot].setVFATCalHeightAll(mask=dict_vfatMasks[thisSlot][ohN], currentPulse=False, height=250)
                 pass # End runType == 0x2 (latency scan)
             pass # End loop over OH's on this AMC
         pass # End loop over AMC's
 
     # Configure AMC13 Trigger Mode
-    if (args.amc13SendsCalPulses:    # Calpulses sent by AMC13 as BGO commands
-        if ((runType == 0x2) || (runType == 0x4)):
+    if (args.amc13SendsCalPulses):    # Calpulses sent by AMC13 as BGO commands
+        if ((runType == 0x2) or (runType == 0x4)):
             # Configure BGO generator to send a CalPulse before the L1A
             cmdCalPulse = 0x14
-            amc13board.configureBGOShort(0, cmd_calPulse, 450, 0, True) # Should send CalPulse at BX = 450; but might actually be 470 from debugging
+            amc13board.configureBGOShort(0, cmdCalPulse, 450, 0, True) # Should send CalPulse at BX = 450; but might actually be 470 from debugging
             pass
 
         # Configure locally generated triggers for one L1A per orbit @ BX=500
-        amc13base.configureLocalT1(True, 0, 1, 1, 0)
+        amc13board.configureLocalL1A(True, 0, 1, 1, 0)
     else:                           # Calpulses sent by CTP7 on receipt of L1A from AMC13
         # place holder
         # Here a higher frequency of L1A's can probably be used
@@ -236,7 +236,7 @@ def trackingDataScan(args, runType):
         if runType == 0x3:  # Threshold Scan
             # placeholder
             raise RuntimeError("trackingDataScan(): Mode Not Implemented Yet")
-        elif ((runType == 0x2) || (runType == 0x4)): #Latency Scan or Scurve
+        elif ((runType == 0x2) or (runType == 0x4)): #Latency Scan or Scurve
             # placeholder
             for chan in range(args.chMin,args.chMax+1):
                 #FIXME might need amc13board.enableLocalL1A(True) here?
@@ -266,7 +266,7 @@ if __name__ == '__main__':
 
     # Required Parameters
     parser.add_argument("amcMask", help="Slot mask to apply, a 1 in the N^th bit indicates the (N+1)^th slot should be considered", type=parseInt)
-    runTypeGroup = parser_trim.add_mutually_exclusive_group(required=True)
+    runTypeGroup = parser.add_mutually_exclusive_group(required=True)
     runTypeGroup.add_argument("--latScan", help="Perform a latency scan using the calibration module", action="store_true")
     runTypeGroup.add_argument("--scurve", help="Take an scurve scan", action="store_true")
     runTypeGroup.add_argument("--thrScan", help="Perform a scan of the CFG_THR_ARM_DAC register", action="store_true")
