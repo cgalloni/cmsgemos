@@ -118,7 +118,7 @@ class HwVFAT(object):
         # FIXME
         # some check on the validity of the input arguments may be required
 
-        return self.confCalPulse(self.parentOH.link, ch, toggleOn, currentPulse, calScaleFactor)
+        return self.confCalPulse(self.parentOH.link, mask, ch, toggleOn, currentPulse, calScaleFactor)
 
     def configureDACMonitor(self, dacSelect, mask=0x0):
         """
