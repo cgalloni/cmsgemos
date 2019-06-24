@@ -192,12 +192,26 @@ def trackingDataScan(args, runType):
             pass
 
         # Configure locally generated triggers for one L1A per orbit @ BX=500
-        amc13board.configureLocalL1A(True, 0, 1, 1, 0)
+        amc13board.configureLocalL1A(True, 0, args.nevts, 1, 0)
     else:                           # Calpulses sent by CTP7 on receipt of L1A from AMC13
-        # place holder
-        # Here a higher frequency of L1A's can probably be used
+        # Configure AMC's when receiving an L1A to delay the L1A and send a calpulse before the L1A
+        # Only valid for GEM_AMC FW >= 3.8.4
         # implement new features of: https://github.com/evka85/GEM_AMC/releases/tag/v3.8.4
-        raise RuntimeError("trackingDataScan(): Mode Not Implemented Yet")
+        for amcN in range(12):
+            # Skip masked AMC's        
+            if( not ((args.amcMask >> amcN) & 0x1)):
+                continue
+            
+            # Open connection to the AMC
+            thisSlot = amcN+1
+
+            dict_vfatBoards[thisSlot].parentOH.parentAMC.configureCalMode(enable=True)
+            pass
+
+        # Configure locally generated triggers for 4 L1A's per orbit
+        rate = (1.0 / 0.0000909091) * 4 # (1 / orbit period) * N_L1A's/orbit
+        amc13board.configureLocalL1A(True, 1, args.nevts, rate, 0)
+        pass
 
     # Perform the scan
     for dacVal in range(args.dacMin,args.dacMax+args.dacStep,args.dacStep):
@@ -237,7 +251,6 @@ def trackingDataScan(args, runType):
             # placeholder
             raise RuntimeError("trackingDataScan(): Mode Not Implemented Yet")
         elif ((runType == 0x2) or (runType == 0x4)): #Latency Scan or Scurve
-            # placeholder
             for chan in range(args.chMin,args.chMax+1):
                 #FIXME might need amc13board.enableLocalL1A(True) here?
 
@@ -245,16 +258,36 @@ def trackingDataScan(args, runType):
                 toggleSettings4DAQ(args.amcMask, chan, dict_ohMasks, dict_vfatBoards, dict_vfatMasks, dacVal, runType, enableCal=True, enableRun=True)
 
                 # Send Triggers
-                for evt in range(args.nevts):
-                    amc13board.sendL1ABurst()
-                    pass # End Event loop
-                #FIXME might need amc13board.enableLocalL1A(False) here?
+                #for evt in range(args.nevts):
+                #    amc13board.sendL1ABurst()
+                #    pass # End Event loop
+                ##FIXME might need amc13board.enableLocalL1A(False) here?
+                amc13board.sendL1ABurst()
+                # FIXME might need a sleep after this...?
 
                 # Stop calpulse to this channel for all VFATs and take VFATs out of run mode
                 toggleSettings4DAQ(args.amcMask, chan, dict_ohMasks, dict_vfatBoards, dict_vfatMasks, 0x0, 0xf, enableCal=False, enableRun=False)
                 pass # End Loop over VFAT Channels
             pass # End if-elif statement
         pass # End Loop over DAC Range
+
+    # Turn off triggers
+    amc13board.stopContinuousL1A()
+    amc13board.enableLocalL1A(False)
+
+    # Take AMC's out of calibration mode if they where in calibration mode
+    if not args.amc13SendsCalPulses:
+        for amcN in range(12):
+            # Skip masked AMC's        
+            if( not ((args.amcMask >> amcN) & 0x1)):
+                continue
+            
+            # Open connection to the AMC
+            thisSlot = amcN+1
+
+            dict_vfatBoards[thisSlot].parentOH.parentAMC.configureCalMode(enable=False)
+            pass
+        pass
 
     return
 
