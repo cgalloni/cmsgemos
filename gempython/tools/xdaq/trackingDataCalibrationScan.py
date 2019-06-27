@@ -202,7 +202,7 @@ def trackingDataScan(args, runType):
             if( not ((args.amcMask >> amcN) & 0x1)):
                 continue
             
-            # Open connection to the AMC
+            # Set the slot number as amcN+1
             thisSlot = amcN+1
 
             dict_vfatBoards[thisSlot].parentOH.parentAMC.configureCalMode(enable=True)
@@ -276,7 +276,12 @@ def trackingDataScan(args, runType):
     amc13board.enableLocalL1A(False)
 
     # Take AMC's out of calibration mode if they where in calibration mode
-    if not args.amc13SendsCalPulses:
+    if (args.amc13SendsCalPulses):    # Calpulses sent by AMC13 as BGO commands
+        if ((runType == 0x2) or (runType == 0x4)):
+            # Disable BGO for channel 0
+            amc13board.disableBGO(0)
+            pass
+    else:
         for amcN in range(12):
             # Skip masked AMC's        
             if( not ((args.amcMask >> amcN) & 0x1)):
