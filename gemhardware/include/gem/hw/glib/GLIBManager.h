@@ -14,6 +14,7 @@
 #include "gem/utils/exception/Exception.h"
 
 #include "gem/calib/GEMCalibEnums.h"
+#include "gem/calib/Calibration.h"
 #include "xdata/Bag.h"
 #include "xdata/Boolean.h"
 #include "xdata/Integer.h"
@@ -165,10 +166,121 @@ namespace gem {
           xdata::Boolean                       m_uhalPhaseShift; // FIXME OBSOLETE
           xdata::Boolean                       m_bc0LockPhaseShift;
           xdata::Boolean                       m_relockPhase;
+          
+          uint32_t m_lastLatency, m_lastVT1, m_lastVT2;
+          
+        public:
 
-	  uint32_t m_lastLatency, m_lastVT1, m_lastVT2;
+          gem::calib::calType m_calType;
+
+          std::map<gem::calib::calType , std::map<std::string,  uint32_t >> m_calParams{
+              {gem::calib::calType::GBTPHASE  ,{{"nSamples",100},{"phaseMin", 0},{"phaseMax", 14},{"stepSize", 1},}},
+                  {gem::calib::calType::LATENCY,{
+                          {"nSamples"  , 100},
+                              {"trigType"  , 0},
+                                  {"l1aTime"   , 250},
+                                      {"mspl"      , 4},
+                                          {"scanMin"   , 0},
+                                              {"scanMax"   , 255},
+                                                  {"vfatChMin" , 0},
+                                                      {"vfatChMax" , 127},
+                                                      
+                                                          {"trigThrottle"  ,0},
+                                                              {"signalSourceType"       , 0},
+                                                                  {"pulseDelay" , 40},
+                                                                      }},
+                      {gem::calib::calType::SCURVE,{
+                              {"nSamples"  , 100},
+                                  {"trigType"  , 0}, // TODO: TTC local should be only possible one
+                                      {"l1aTime"   , 250},
+                                          {"pulseDelay", 40},
+                                              {"latency"   , 33},
+                                                  {"vfatChMin" , 0},
+                                                      {"vfatChMax" , 127},
+                                                          {"mspl"      , 4},
+                                                              }},
+                          {gem::calib::calType::SBITARMDACSCAN  ,{
+                                  {"comparatorType",0},
+                                      {"perChannelType",0},
+                                          {"vfatChMin" , 0},
+                                              {"vfatChMax" , 127},
+                                                  {"stepSize", 1},
+                                                      }},
+                              {gem::calib::calType::ARMDACSCAN  ,{
+                                      {"nSamples"  , 1000},
+                                          {"trigType"  , 0},
+                                              {"vfatChMin" , 0},
+                                                  {"vfatChMax" , 127},
+                                                      }},
+                                  {gem::calib::calType::TRIMDAC  , {
+                                          {"nSamples"   , 100},
+                                              {"trigType"   , 0}, // TODO: TTC local should be only possible one
+                                                  {"nSamples"   , 100},
+                                                      {"l1aTime"    , 250},
+                                                          {"pulseDelay" , 40},
+                                                              {"latency"    , 33},
+                                                                  {"mspl"       , 4},
+                                                                      //  {"trimValues" , "-63,0,63"}, TODO: to be load as strings and converted 
+                   
+                                                                      }},
+                                      {gem::calib::calType::DACSCANV3  ,{
+                                              {"adcType",0},
+                                                  }},
+                                          {gem::calib::calType::CALIBRATEARMDAC,{
+                                                  {"nSamples"  , 100},
+                                                      {"trigType"  , 0}, // TODO: TTC local should be only possible one
+                                                          {"l1aTime"   , 250},
+                                                              {"pulseDelay", 40},
+                                                                  {"latency"   , 33},
+                                                                      // {"armDacPoins","17,20,23,25,30,40,50,60,70,80,100,125,150,175"},TODO: to be load as strings and converted 
+                   
+                                                                      }},
+
+                            
+                                              };
+          
+          std::map<gem::calib::calType , std::map<std::string, std::string >> m_calStringParams {
+              
+              {gem::calib::calType::CALIBRATEARMDAC, {{"armDacPoins","17,20,23,25,30,40,50,60,70,80,100,125,150,175"}, }},
+                  {gem::calib::calType::TRIMDAC  , {{"trimValues" , "-63,0,63"},  }},
+                      
+                      };
+          std::string extractSOAPCommandParameterString(xoap::MessageReference const& msg,
+                                                        std::string const& parameterName);
+          int extractSOAPCommandParameterInteger(xoap::MessageReference const& msg,
+                                                              std::string const& parameterName);
+
+           bool extractSOAPCommandParameterBoolean(xoap::MessageReference const& msg,
+                                                              std::string const& parameterName);
+
+          xoap::SOAPElement extractSOAPCommandParameterElement(xoap::MessageReference const& msg,
+                                                               std::string const& parameterName);
+
+          std::map<gem::calib::dacScanType, gem::calib::Calibration::dacFeature> m_dacScanTypeParams{
+              {gem::calib::dacScanType::CFG_CAL_DAC,{"CFG_CAL_DAC", 0, 255, false}},
+                  {gem::calib::dacScanType::CFG_BIAS_PRE_I_BIT, {"CFG_BIAS_PRE_I_BIT", 0, 255, false}},
+                      {gem::calib::dacScanType::CFG_BIAS_PRE_I_BLCC,{"CFG_BIAS_PRE_I_BLCC", 0, 63, false}},
+                          {gem::calib::dacScanType::CFG_BIAS_PRE_I_BSF,{"CFG_BIAS_PRE_I_BSF", 0, 63, false}},
+                              {gem::calib::dacScanType::CFG_BIAS_SH_I_BFCAS,{"CFG_BIAS_SH_I_BFCAS", 0, 255, false}},
+                                  {gem::calib::dacScanType::CFG_BIAS_SH_I_BDIFF,{"CFG_BIAS_SH_I_BDIFF", 0, 255, false}},
+                                      {gem::calib::dacScanType::CFG_BIAS_SD_I_BDIFF,{"CFG_BIAS_SD_I_BDIFF", 0, 255, false}},
+                                          {gem::calib::dacScanType::CFG_BIAS_SD_I_BFCAS,{"CFG_BIAS_SD_I_BFCAS", 0, 255, false}},
+                                              {gem::calib::dacScanType::CFG_BIAS_SD_I_BSF,{"CFG_BIAS_SD_I_BSF", 0, 63, false}},
+                                                  {gem::calib::dacScanType::CFG_BIAS_CFD_DAC_1,{"CFG_BIAS_CFD_DAC", 0, 63, false}},
+                                                      {gem::calib::dacScanType::CFG_BIAS_CFD_DAC_2,{"CFG_BIAS_CFD_DAC", 0, 63, false}},
+                                                          {gem::calib::dacScanType::CFG_HYST,{"CFG_HYST", 0, 63, false}},
+                                                              {gem::calib::dacScanType::CFG_THR_ARM_DAC,{"CFG_THR_ARM_DAC", 0, 255, false}},
+                                                                  {gem::calib::dacScanType::CFG_THR_ZCC_DAC,{"CFG_THR_ZCC_DAC", 0, 255, false}},
+                                                                      {gem::calib::dacScanType::CFG_BIAS_PRE_VREF,{"CFG_BIAS_PRE_VREF", 0, 255, false}},
+                                                                          {gem::calib::dacScanType::CFG_VREF_ADC,{"CFG_VREF_ADC", 0, 3, false}}
+            };
+          
+           std::map<std::string, uint32_t> m_amcOpticalLinks;
+           void initializeOpticalLinksMask (std::map<std::string, uint32_t>* amcOpticalLinks);
+        private:
+           xdata::Integer m_nShelves;
+           
         };  // class GLIBManager
-
     }  // namespace gem::hw::glib
   }  // namespace gem::hw
 }  // namespace gem

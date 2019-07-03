@@ -3,7 +3,8 @@
 	      xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
 	      xmlns:xc="http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30">
 
-  <xc:Context url="http://gem-daq01.cms:5050">
+  <!--<xc:Context url="http://gem-daq01.cms:5050">-->
+  <xc:Context url="http://gem904daq04:20505">
     <xc:Application class="gem::hw::glib::GLIBManager" id="30" instance="0" network="local">
       <properties xmlns="urn:xdaq-application:gem::hw::glib::GLIBManager"
 		  xsi:type="soapenc:Struct">
@@ -18,6 +19,7 @@
             <sbitSource    xsi:type="xsd:integer">5</sbitSource>
           </GLIBInfo>
 	</AllGLIBsInfo>
+    <nShelvesGLIB  xsi:type="xsd:integer">2</nShelvesGLIB>
       </properties>
     </xc:Application>
 
@@ -201,10 +203,10 @@
 
   <xc:Context url="http://tcds-control-csc-pri.cms:2104">
     <xc:Application class="tcds::ici::ICIController" id="301" instance="0" network="local" >
-    </Application>
+      </xc:Application>
 
     <xc:Application class="tcds::pi::PIController"   id="501" instance="0" network="local" >
-    </Application>
+    </xc:Application>
   </xc:Context>
 
 </xc:Partition>

@@ -184,6 +184,7 @@ namespace gem {
                 std::string label;
                 uint16_t min;
                 uint16_t max;
+                bool scan;
             };
 
             /**
@@ -191,24 +192,25 @@ namespace gem {
              */
             
             std::map<dacScanType_t, dacFeature> m_dacScanTypeParams{
-                {CFG_CAL_DAC,{"CFG_CAL_DAC", 0, 255}},
-                {CFG_BIAS_PRE_I_BIT, {"CFG_BIAS_PRE_I_BIT", 0, 255}},
-                {CFG_BIAS_PRE_I_BLCC,{"CFG_BIAS_PRE_I_BLCC", 0, 63}},
-                {CFG_BIAS_PRE_I_BSF,{"CFG_BIAS_PRE_I_BSF", 0, 63}},
-                {CFG_BIAS_SH_I_BFCAS,{"CFG_BIAS_SH_I_BFCAS", 0, 255}},
-                {CFG_BIAS_SH_I_BDIFF,{"CFG_BIAS_SH_I_BDIFF", 0, 255}},
-                {CFG_BIAS_SD_I_BDIFF,{"CFG_BIAS_SD_I_BDIFF", 0, 255}},
-                {CFG_BIAS_SD_I_BFCAS,{"CFG_BIAS_SD_I_BFCAS", 0, 255}},
-                {CFG_BIAS_SD_I_BSF,{"CFG_BIAS_SD_I_BSF", 0, 63}},
-                {CFG_BIAS_CFD_DAC_1,{"CFG_BIAS_CFD_DAC", 0, 63}},
-                {CFG_BIAS_CFD_DAC_2,{"CFG_BIAS_CFD_DAC", 0, 63}},
-                {CFG_HYST,{"CFG_HYST", 0, 63}},
-                {CFG_THR_ARM_DAC,{"CFG_THR_ARM_DAC", 0, 255}},
-                {CFG_THR_ZCC_DAC,{"CFG_THR_ZCC_DAC", 0, 255}},
-                {CFG_BIAS_PRE_VREF,{"CFG_BIAS_PRE_VREF", 0, 255}},
-                {CFG_VREF_ADC,{"CFG_VREF_ADC", 0, 3}}
+                {CFG_CAL_DAC,{"CFG_CAL_DAC", 0, 255, false}},
+                {CFG_BIAS_PRE_I_BIT, {"CFG_BIAS_PRE_I_BIT", 0, 255, false}},
+                {CFG_BIAS_PRE_I_BLCC,{"CFG_BIAS_PRE_I_BLCC", 0, 63, false}},
+                {CFG_BIAS_PRE_I_BSF,{"CFG_BIAS_PRE_I_BSF", 0, 63, false}},
+                {CFG_BIAS_SH_I_BFCAS,{"CFG_BIAS_SH_I_BFCAS", 0, 255, false}},
+                {CFG_BIAS_SH_I_BDIFF,{"CFG_BIAS_SH_I_BDIFF", 0, 255, false}},
+                {CFG_BIAS_SD_I_BDIFF,{"CFG_BIAS_SD_I_BDIFF", 0, 255, false}},
+                {CFG_BIAS_SD_I_BFCAS,{"CFG_BIAS_SD_I_BFCAS", 0, 255, false}},
+                {CFG_BIAS_SD_I_BSF,{"CFG_BIAS_SD_I_BSF", 0, 63, false}},
+                {CFG_BIAS_CFD_DAC_1,{"CFG_BIAS_CFD_DAC", 0, 63, false}},
+                {CFG_BIAS_CFD_DAC_2,{"CFG_BIAS_CFD_DAC", 0, 63, false}},
+                {CFG_HYST,{"CFG_HYST", 0, 63, false}},
+                {CFG_THR_ARM_DAC,{"CFG_THR_ARM_DAC", 0, 255, false}},
+                {CFG_THR_ZCC_DAC,{"CFG_THR_ZCC_DAC", 0, 255, false}},
+                {CFG_BIAS_PRE_VREF,{"CFG_BIAS_PRE_VREF", 0, 255, false}},
+                {CFG_VREF_ADC,{"CFG_VREF_ADC", 0, 3, false}}
             };
 
+            std::map<std::string,xdata::Integer> amcOpticalLinksMap ;
             std::map<std::string,xdata::Integer> calibConfigMap ;
             std::map<std::string,xdata::String> calibTypeConfigMap;
             
@@ -220,12 +222,24 @@ namespace gem {
             void fillCalibTypeConfigMap(calType_t calType,std::map<std::string,xdata::String>* calibConfigTypeMap);
             
             void fillBagFromConfigMap( std::unordered_map<std::string, xdata::Serializable*>* bag, std::map<std::string, xdata::Integer>* calibConfigMap, std::map<std::string, xdata::String>* calibTypeConfigMap);
-                
-         
+            
+            struct dacFeatureBag {
+                xdata::String label;
+                xdata::Integer min;
+                xdata::Integer max;
+                xdata::Boolean scan;
+            };
+            std::map<std::string, dacFeatureBag> dacScanConfigMap ;
+            void initializeAndFillDacScanConfigMap(std::map<std::string, dacFeatureBag>* dacScanConfigMap);
+            void fillDacScanBagFromConfigMap( std::unordered_map<std::string, xdata::Serializable*>* bag, std::map<std::string, dacFeatureBag>* dacScanConfigMap );
 
+            void initializeAndFillOpticalLinksMap(std::map<std::string, xdata::Integer>* OpticalLinksMap);
+            void fillBagFromOpticalLinksMap( std::unordered_map<std::string, xdata::Serializable*>* bag, std::map<std::string, xdata::Integer>* OpticalLinksMap);
+            
         private:
-   
             xdata::Integer m_nShelves;
+            void sendSOAPMessageForDacScan();
+            void sendSOAPMessageForCalibration();
             
              
             const std::map<std::string, calType_t> m_calTypeSelector{
@@ -241,24 +255,7 @@ namespace gem {
             
             
         protected:
-            //CG borrowed from GEMSupervisor.hGEMSupervisor.h for SOAP 
-            /* std::vector<xdaq::ApplicationDescriptor*> v_supervisedApps; */
-            /* std::vector<std::vector<xdaq::ApplicationDescriptor*> > getInitializationOrder(); */
-            /* int initPriority(const std::string& classname); */
-            //CG borrowed from GEMSupervisor.hGEMSupervisor.h for SOAP 
-
-            /*xdata::Bag<LatencyConfig> m_LatencyConfig;*/
-
-            /* class LatencyConfig */
-            /* { */
-            /* public: */
-            /*     LatencyConfig(); */
-            /*     void registerFields(xdata::Bag<Calibration::LatencyConfig>* bag); */
-
- 
-            /*     // configuration parameters */
-
-            // Calibration configuration
+           
         
         };
         

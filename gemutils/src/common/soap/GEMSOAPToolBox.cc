@@ -296,6 +296,8 @@ std::pair<std::string, std::string> gem::utils::soap::GEMSOAPToolBox::extractCom
   }
   std::string commandName    = xoap::XMLCh2String((bodyList->item(0))->getLocalName());
   std::string parameterValue = xoap::XMLCh2String((bodyList->item(0))->getNodeValue());
+  std::cout<< "GEMSOAPToolBox::extractCommandWithParameter commandName  " << commandName <<" parameterValue "<<  parameterValue 
+           <<   std::endl;//CG
   return std::make_pair(commandName, parameterValue);
 }
 
