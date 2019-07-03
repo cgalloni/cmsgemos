@@ -4,14 +4,14 @@
               xmlns:xc="http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30">
 
 
-  <xc:Context url="http://gem904daq04:20501">
+  <xc:Context url="http://gem904daq04:20502">
      <xc:Application class="gem::calib::Calibration" id="30" instance="0" network="local">
       <properties xmlns="urn:xdaq-application:Calibration"
                   xsi:type="soapenc:Struct">
         <nShelves  xsi:type="xsd:integer">2</nShelves>
       </properties>
     </xc:Application>
-    <xc:Application class="gem::hw::glib::GLIBManager" id="50" instance="0" network="local">
+    <xc:Application class="gem::hw::glib::GLIBManager" id="60" instance="0" network="local">
       <properties xmlns="urn:xdaq-application:gem::hw::glib::GLIBManager"
 		  xsi:type="soapenc:Struct">
 	<AMCSlots       xsi:type="xsd:string">2</AMCSlots>
@@ -22,10 +22,11 @@
             <slot     xsi:type="xsd:integer">2</slot>
             <present  xsi:type="xsd:boolean">true</present>
             <!--CardName xsi:type="xsd:string">gem.shelf02.ctp7-02</CardName-->
-            
+          
             <sbitSource    xsi:type="xsd:integer">5</sbitSource>
           </GLIBInfo>
 	</AllGLIBsInfo>
+    <nShelvesGLIB  xsi:type="xsd:integer">2</nShelvesGLIB>
       </properties>
     </xc:Application>
 

@@ -285,6 +285,8 @@ void gem::supervisor::GEMSupervisor::initializeAction()
                                                                        m_dbPort.value_,
                                                                        m_dbUser.toString(),
                                                                        m_dbPass.toString());
+  
+  CMSGEMOS_INFO("GEMSupervisor::initializeAction *****CG about to try");//CG
 
   try {
     if (m_useLocalDBInstance)
@@ -298,10 +300,13 @@ void gem::supervisor::GEMSupervisor::initializeAction()
       if (true) {
         CMSGEMOS_INFO("GEMSupervisor::initializeAction No RCMS state listener found, continuing to initialize children ");
         for (auto j = i->begin(); j != i->end(); ++j) {
+            CMSGEMOS_INFO("GEMSupervisor::initializeAction Halting " << (*j)->getClassName() 
+                          << " in case it is not in 'Halted'"); //CG
           if (((*j)->getClassName()).rfind("tcds::") != std::string::npos) {
             CMSGEMOS_INFO("GEMSupervisor::initializeAction Halting " << (*j)->getClassName()
                           << " in case it is not in 'Halted'");
             // need to ensure leases are properly respected
+            
             gem::utils::soap::GEMSOAPToolBox::sendCommand("Halt", p_appContext, p_appDescriptor, *j);
           } else {
             CMSGEMOS_INFO("GEMSupervisor::initializeAction Initializing " << (*j)->getClassName());
@@ -445,6 +450,7 @@ void gem::supervisor::GEMSupervisor::configureAction()
           xdata::String hwConfig(content);
           // tcdsParams.addField("hardwareConfigurationString",content);
           tcdsParams.insert(std::make_pair("hardwareConfigurationString",&(hwConfig)));
+          CMSGEMOS_INFO("GEMsupervisor:: about trying to see the application called " << (*j)->getClassName()<< " just printing"); //CG
           gem::utils::soap::GEMSOAPToolBox::sendCommandWithParameterBag(command, tcdsParams, p_appContext, p_appDescriptor, *j);
 
           // put a mutex around this

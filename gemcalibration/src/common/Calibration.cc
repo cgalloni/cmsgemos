@@ -104,15 +104,34 @@ void gem::calib::Calibration::applyAction(xgi::Input* in, xgi::Output* out)
                     m_amcOpticalLinks.emplace(amc_id, 0);
                     t_stream << ".ohMask";
                     uint32_t ohMask = std::stoul(cgi[t_stream.str()]->getValue(), 0, 16);
+                    
+                    CMSGEMOS_DEBUG("Calibration::applyAction : OH mask for " << t_stream.str() << " ohMask is " << ohMask );
                     if (ohMask > 0xffc) {
                         t_errorsOccured = true;
                         CMSGEMOS_ERROR("Calibration::applyAction : OH mask for " << t_stream.str() << " is out of allowed boundaries! Ignoring it");
                     } else{
                         m_amcOpticalLinks.find(amc_id)->second = ohMask;
                     }
-                } // end if checked for amc
+                } else{// end if checked for amc
+                    std::string amc_id = t_stream.str();
+                    m_amcOpticalLinks.emplace(amc_id, 0);
+                    m_amcOpticalLinks.find(amc_id)->second = 0;
+                }
             } // end loop over NAMC 
         } // end if checked for shelf
+        else{ /// filling also the empty slot.amc with OHMask=0 
+           for (unsigned int j = 0; j < gem::base::GEMApplication::MAX_AMCS_PER_CRATE; ++j) { //SHELF.AMC
+                t_stream.clear();
+                t_stream.str(std::string());
+                t_stream << "shelf"<< std::setfill('0') << std::setw(2) << i+1 << ".amc" << std::setfill('0') << std::setw(2) << j+1;
+                std::string amc_id = t_stream.str();
+                m_amcOpticalLinks.emplace(amc_id, 0);
+                m_amcOpticalLinks.find(amc_id)->second = 0;
+                CMSGEMOS_DEBUG("Calibration::applyAction: ****Empty OH mask for " << t_stream.str() << " ohMask is 0");
+           } // end if checked for amc
+           
+        }
+            
     } //end loop over shelves
     //TODO: should we check if at least one link is selected??
     
@@ -128,8 +147,10 @@ void gem::calib::Calibration::applyAction(xgi::Input* in, xgi::Output* out)
             if (checked) {
                 it.second.min = cgi[it.second.label+"_Min"]->getIntegerValue();
                 it.second.max = cgi[it.second.label+"_Max"]->getIntegerValue();
-
-                CMSGEMOS_DEBUG("Calibration::applyAction DAC SCAN V3 for calibration: checked "<< it.second.label << " with par  min" << it.second.min << " max " << it.second.max);
+                it.second.scan = true;
+                //CMSGEMOS_DEBUG("Calibration::applyAction DAC SCAN V3 for calibration: checked "<< it.second.label << " with par  min " << it.second.min << " max " << it.second.max);
+            } else {
+                it.second.scan = false;
             }
         }
     }
@@ -142,50 +163,12 @@ void gem::calib::Calibration::applyAction(xgi::Input* in, xgi::Output* out)
         *out << "{\"status\":0,\"alert\":\"Parameters successfully applied. Now you can run the scan.\"}";
     }
     
-
-
-    /////CG:
-   
-    std::set<xdaq::ApplicationDescriptor*> used;
-    std::set<std::string> groups = p_appZone->getGroupNames();
-    for (auto i =groups.begin(); i != groups.end(); ++i) {
-        CMSGEMOS_INFO("GEMCalibration:::init::xDAQ group: " << *i
-                       << "getApplicationGroup() " << p_appZone->getApplicationGroup(*i)->getName());
-        
-        xdaq::ApplicationGroup* ag = const_cast<xdaq::ApplicationGroup*>(p_appZone->getApplicationGroup(*i));
-#ifdef x86_64_centos7
-        std::set<const xdaq::ApplicationDescriptor*> allApps = ag->getApplicationDescriptors();
-#else
-        std::set<xdaq::ApplicationDescriptor*> allApps = ag->getApplicationDescriptors();
-#endif
-        //CMSGEMOS_INFO("GEMCalibration::init::getApplicationDescriptors() " << allApps.size());
-
-        for (auto j = allApps.begin(); j != allApps.end(); ++j) {
-            std::string classname = (*j)->getClassName();
-            
-            if (((*j)->getClassName()).rfind("GLIBManager") != std::string::npos) {
-                       
-                xdaq::ApplicationDescriptor* app=(xdaq::ApplicationDescriptor*) *j;
-                std::string command = "calibrateAction"; 
-                initializeCalibConfigMap( &calibConfigMap, &calibTypeConfigMap);
-                
-                fillCalibConfigMap(m_calType,&calibConfigMap);
-               
-                //printCalibConfigMap(&calibConfigMap);
-                fillCalibTypeConfigMap(m_calType,&calibTypeConfigMap);
-                 std::unordered_map<std::string, xdata::Serializable*> bagFromMap;
-                xdata::Integer calType= m_calType;
-                bagFromMap.insert(std::make_pair("calType",    &(calType)));        
-                fillBagFromConfigMap(&bagFromMap,&calibConfigMap,&calibTypeConfigMap);
-               
-                CMSGEMOS_INFO("GEMCalibration::applying action sending SOAP message to GLIB Manager with unordered bag");
-                gem::utils::soap::GEMSOAPToolBox::sendCommandWithParameterBag(command, bagFromMap, p_appContext, p_appDescriptor, app);
-                
-            }
-                    
-        }
-    }
-        
+      
+    if (m_calType==DACSCANV3){
+        sendSOAPMessageForDacScan();
+    } else sendSOAPMessageForCalibration();
+    
+    
 }
 
 void gem::calib::Calibration::setCalType(xgi::Input* in, xgi::Output* out)
@@ -274,5 +257,148 @@ void gem::calib::Calibration::printCalibConfigMap(  std::map<std::string, xdata:
     for ( iterStr = calibTypeConfigMap->begin(); iterStr != calibTypeConfigMap->end() ;++iterStr ) {
         bag->insert(std::make_pair(iterStr->first,    &(iterStr->second)));  
     }
+}
+
+void gem::calib::Calibration::initializeAndFillDacScanConfigMap(std::map<std::string, dacFeatureBag>* dacScanConfigMap) {
+    for (auto it :  m_dacScanTypeParams ) {  
+            
+        
+        if (dacScanConfigMap->find(it.second.label)==dacScanConfigMap->end()) {
+            dacFeatureBag tmp;
+            tmp.label= it.second.label;
+            tmp.min=it.second.min;
+            tmp.max=it.second.max;
+            tmp.scan=it.second.scan;
+            dacScanConfigMap->insert( std::pair <std::string,dacFeatureBag> (it.second.label, tmp ) );
+            
+        }else{
+            dacScanConfigMap->find(it.second.label)->second.min = it.second.min;
+            dacScanConfigMap->find(it.second.label)->second.max = it.second.max;
+            dacScanConfigMap->find(it.second.label)->second.scan = it.second.scan;
+        }           
+        
+    }
+}
+
+void gem::calib::Calibration::fillDacScanBagFromConfigMap( std::unordered_map<std::string, xdata::Serializable*>* bag, std::map<std::string, dacFeatureBag>* dacScanConfigMap ) {
+    
+    std::map<std::string, dacFeatureBag>::iterator iter;
+    for ( iter = dacScanConfigMap->begin(); iter != dacScanConfigMap->end() ;++iter ) {
+        bag->insert(std::make_pair(iter->first,    &(iter->second.label)));
+        bag->insert(std::make_pair(iter->first+"_min",    &(iter->second.min)));
+        bag->insert(std::make_pair(iter->first+"_max",    &(iter->second.max)));
+        bag->insert(std::make_pair(iter->first+"_scan",    &(iter->second.scan)));
+        
+    }
+}
+void gem::calib::Calibration::sendSOAPMessageForCalibration() {
+ 
+    std::set<xdaq::ApplicationDescriptor*> used;
+    std::set<std::string> groups = p_appZone->getGroupNames();
+    for (auto i =groups.begin(); i != groups.end(); ++i) {
+        CMSGEMOS_INFO("GEMCalibration:::init::xDAQ group: " << *i
+                      << "getApplicationGroup() " << p_appZone->getApplicationGroup(*i)->getName());
+        
+        xdaq::ApplicationGroup* ag = const_cast<xdaq::ApplicationGroup*>(p_appZone->getApplicationGroup(*i));
+#ifdef x86_64_centos7
+        std::set<const xdaq::ApplicationDescriptor*> allApps = ag->getApplicationDescriptors();
+#else
+        std::set<xdaq::ApplicationDescriptor*> allApps = ag->getApplicationDescriptors();
+#endif
+       
+        for (auto j = allApps.begin(); j != allApps.end(); ++j) {
+            std::string classname = (*j)->getClassName();
+            
+            if (((*j)->getClassName()).rfind("GLIBManager") != std::string::npos) {
+                       
+                xdaq::ApplicationDescriptor* app=(xdaq::ApplicationDescriptor*) *j;
+                std::string command = "calibrateAction"; 
+                initializeCalibConfigMap( &calibConfigMap, &calibTypeConfigMap);
+                
+                fillCalibConfigMap(m_calType,&calibConfigMap);
+               
+                //printCalibConfigMap(&calibConfigMap);
+                fillCalibTypeConfigMap(m_calType,&calibTypeConfigMap);
+                std::unordered_map<std::string, xdata::Serializable*> bagFromMap;
+                xdata::Integer calType= m_calType;
+                bagFromMap.insert(std::make_pair("calType",    &(calType)));        
+                fillBagFromConfigMap(&bagFromMap,&calibConfigMap,&calibTypeConfigMap);
+
+                initializeAndFillOpticalLinksMap( &amcOpticalLinksMap);
+                fillBagFromOpticalLinksMap(&bagFromMap,&amcOpticalLinksMap);
+                
+                CMSGEMOS_INFO("GEMCalibration::applying action sending SOAP message to GLIB Manager with unordered bag");
+                gem::utils::soap::GEMSOAPToolBox::sendCommandWithParameterBag(command, bagFromMap, p_appContext, p_appDescriptor, app);
+      
+            }
+                    
+        }
+    }
+    
+}
+
+void gem::calib::Calibration::sendSOAPMessageForDacScan(){
+
+ 
+    std::set<xdaq::ApplicationDescriptor*> used;
+    std::set<std::string> groups = p_appZone->getGroupNames();
+    for (auto i =groups.begin(); i != groups.end(); ++i) {
+        CMSGEMOS_INFO("GEMCalibration:::init::xDAQ group: " << *i
+                      << "getApplicationGroup() " << p_appZone->getApplicationGroup(*i)->getName());
+        
+        xdaq::ApplicationGroup* ag = const_cast<xdaq::ApplicationGroup*>(p_appZone->getApplicationGroup(*i));
+#ifdef x86_64_centos7
+        std::set<const xdaq::ApplicationDescriptor*> allApps = ag->getApplicationDescriptors();
+#else
+        std::set<xdaq::ApplicationDescriptor*> allApps = ag->getApplicationDescriptors();
+#endif
+        
+        for (auto j = allApps.begin(); j != allApps.end(); ++j) {
+            std::string classname = (*j)->getClassName();
+            
+            if (((*j)->getClassName()).rfind("GLIBManager") != std::string::npos) {
+                       
+                xdaq::ApplicationDescriptor* app=(xdaq::ApplicationDescriptor*) *j;
+                std::string command = "calibrateAction"; 
+                initializeAndFillDacScanConfigMap( &dacScanConfigMap);
+                std::unordered_map<std::string, xdata::Serializable*> bagDacScanFromMap;
+                xdata::Integer calType= m_calType;
+                bagDacScanFromMap.insert(std::make_pair("calType",    &(calType)));        
+                fillDacScanBagFromConfigMap(&bagDacScanFromMap,&dacScanConfigMap);
+                initializeAndFillOpticalLinksMap( &amcOpticalLinksMap);
+                fillBagFromOpticalLinksMap(&bagDacScanFromMap,&amcOpticalLinksMap);
+                CMSGEMOS_INFO("GEMCalibration::applying action sending SOAP message to GLIB Manager with unordered bag");
+                gem::utils::soap::GEMSOAPToolBox::sendCommandWithParameterBag(command, bagDacScanFromMap, p_appContext, p_appDescriptor, app);
+      
+            }
+                    
+        }
+    }
+    
+}
+////========
+
+void gem::calib::Calibration::initializeAndFillOpticalLinksMap(std::map<std::string, xdata::Integer>* amcOpticalLinksMap) {
+    for (auto it :  m_amcOpticalLinks ) {  
+        if (amcOpticalLinksMap->find(it.first)== amcOpticalLinksMap->end()) {
+            xdata::Integer tmp;
+            tmp = it.second;
+            amcOpticalLinksMap->insert( std::pair <std::string,xdata::Integer> (it.first, tmp ) );
+        
+        }else{
+            amcOpticalLinksMap->find(it.first)->second = it.second;
+        }              
+    }
+}
+
+void gem::calib::Calibration::fillBagFromOpticalLinksMap( std::unordered_map<std::string, xdata::Serializable*>* bag, std::map<std::string, xdata::Integer>* amcOpticalLinksMap ) {
+    
+     std::map<std::string,xdata::Integer>::iterator iter;
+    for ( iter = amcOpticalLinksMap->begin(); iter != amcOpticalLinksMap->end() ;++iter ) {
+        bag->insert(std::make_pair(iter->first,    &(iter->second)));
+        CMSGEMOS_DEBUG("GEMCalibration::fillBagFromOpticalLinksMap: mask " << iter->first << " value "<< iter->second );
+    }
+
+    
 }
 

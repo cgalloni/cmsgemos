@@ -14,6 +14,7 @@
 #include "gem/utils/exception/Exception.h"
 
 #include "gem/calib/GEMCalibEnums.h"
+#include "gem/calib/Calibration.h"
 #include "xdata/Bag.h"
 #include "xdata/Boolean.h"
 #include "xdata/Integer.h"
@@ -136,6 +137,7 @@ namespace gem {
           std::array<std::shared_ptr<GLIBMonitor>, MAX_AMCS_PER_CRATE> m_glibMonitors;  ///< AMCMonito pointers to be managed
           std::array<is_toolbox_ptr, MAX_AMCS_PER_CRATE> is_glibs;                      ///< AMC InfoSpace pointers to be managed
 
+
           xdata::Vector<xdata::Bag<GLIBInfo> > m_glibInfo;  ///< [MAX_AMCS_PER_CRATE];
           xdata::String  m_amcSlots;           ///< 
           xdata::String  m_connectionFile;     ///< 
@@ -145,8 +147,8 @@ namespace gem {
 
 	  uint32_t m_lastLatency;         ///< Special variable for latency scan mode
           uint32_t m_lastVT1, m_lastVT2;  ///< Special variable for threshold scan mode 
-        };  // class GLIBManager
 
+        };  // class GLIBManager
     }  // namespace gem::hw::glib
   }  // namespace gem::hw
 }  // namespace gem
