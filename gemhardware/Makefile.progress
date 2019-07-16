@@ -1,7 +1,3 @@
-#
-# Makefile for gemhardware package
-#
-
 Project=cmsgemos
 ShortProject=gem
 Package=gemhardware

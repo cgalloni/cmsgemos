@@ -59,8 +59,7 @@ gem::hw::glib::GLIBManager::GLIBManager(xdaq::ApplicationStub* stub) :
   m_amcEnableMask(0),
   m_uhalPhaseShift(false),
   m_bc0LockPhaseShift(false),
-  m_relockPhase(true),
-  m_nShelves(0)
+  m_relockPhase(true)
 {
   m_glibInfo.setSize(MAX_AMCS_PER_CRATE);
  
@@ -73,7 +72,7 @@ gem::hw::glib::GLIBManager::GLIBManager(xdaq::ApplicationStub* stub) :
   p_appInfoSpace->fireItemAvailable("UHALPhaseShift",    &m_uhalPhaseShift);
   p_appInfoSpace->fireItemAvailable("BC0LockPhaseShift", &m_bc0LockPhaseShift);
   p_appInfoSpace->fireItemAvailable("RelockPhase",       &m_relockPhase);
-  p_appInfoSpace->fireItemAvailable("nShelvesGLIB",     &m_nShelves);
+ 
  
   p_appInfoSpace->addItemRetrieveListener("AllGLIBsInfo",      this);
   p_appInfoSpace->addItemRetrieveListener("AMCSlots",          this);
@@ -81,14 +80,14 @@ gem::hw::glib::GLIBManager::GLIBManager(xdaq::ApplicationStub* stub) :
   p_appInfoSpace->addItemRetrieveListener("UHALPhaseShift",    this);
   p_appInfoSpace->addItemRetrieveListener("BC0LockPhaseShift", this);
   p_appInfoSpace->addItemRetrieveListener("RelockPhase",       this);
-  p_appInfoSpace->addItemRetrieveListener("nShelvesGLIB",      this);
+ 
   p_appInfoSpace->addItemChangedListener( "AllGLIBsInfo",      this);
   p_appInfoSpace->addItemChangedListener( "AMCSlots",          this);
   p_appInfoSpace->addItemChangedListener( "ConnectionFile",    this);
   p_appInfoSpace->addItemChangedListener( "UHALPhaseShift",    this);
   p_appInfoSpace->addItemChangedListener( "BC0LockPhaseShift", this);
   p_appInfoSpace->addItemChangedListener( "RelockPhase",       this);
-  p_appInfoSpace->addItemChangedListener("nShelvesGLIB",       this);
+ 
   xgi::bind(this, &GLIBManager::dumpGLIBFIFO, "dumpGLIBFIFO");
 
   // initialize the GLIB application objects
@@ -98,8 +97,9 @@ gem::hw::glib::GLIBManager::GLIBManager(xdaq::ApplicationStub* stub) :
   CMSGEMOS_DEBUG("GLIBManager::done");
 
  
-  xoap::bind(this, &gem::hw::glib::GLIBManager::calibrateAction, "calibrateAction", XDAQ_NS_URI);
+  xoap::bind<gem::base::GEMApplication>(this, &gem::base::GEMApplication::calibParamRetrieve, "calibParamRetrieve", XDAQ_NS_URI);
 
+  xoap::bind(this, &gem::hw::glib::GLIBManager::calibParamPrint, "calibParamPrint", XDAQ_NS_URI);
   
   // set up the info hwCfgInfoSpace
   init();
@@ -182,7 +182,7 @@ void gem::hw::glib::GLIBManager::actionPerformed(xdata::Event& event)
 }
 
 void gem::hw::glib::GLIBManager::init()
-{ CMSGEMOS_INFO("gem::glib::GLIBManager:init() number of shelves: " << m_nShelves.value_);
+{ 
   // anything needed here?
 }
 
@@ -796,62 +796,7 @@ void gem::hw::glib::GLIBManager::resetAction(toolbox::Event::Reference e)
   throw (toolbox::fsm::exception::Exception) {
 }
 
-xoap::MessageReference gem::hw::glib::GLIBManager::calibrateAction(xoap::MessageReference msg) {
-    CMSGEMOS_INFO("GLIBManager::calibrateAction activated");
-    //msg->writeTo(std::cout);
- 
-    std::string commandName = "calibrateAction";
-    if (msg.isNull()) {
-        CMSGEMOS_INFO("GLIBManager::calibrateAction Null message received!");
-        XCEPT_RAISE(xoap::exception::Exception,"Null message received!");
-    }
-    CMSGEMOS_INFO("GLIBManager::calibrateAction message received");
 
-    initializeOpticalLinksMask(&m_amcOpticalLinks);
-    
-    for (auto it:m_amcOpticalLinks){    
-        it.second = extractSOAPCommandParameterInteger(msg,it.first);
-        CMSGEMOS_DEBUG("GLIBManager::calibrateAction for optical link parameter retrieved: " << it.first << " = " << it.second);
-    }
-    
-    
-    
-    std::string  parameterName="calType";
-    m_calType = (gem::calib::calType) extractSOAPCommandParameterInteger(msg,parameterName);
-    if ( m_calType == gem::calib::calType::DACSCANV3 ) {
-        CMSGEMOS_INFO("GLIBManager::calibrateAction  need to retrieve DACSCANV3 scans");
-        std::map<gem::calib::dacScanType, gem::calib::Calibration::dacFeature>::iterator it;
-        
-        for (auto it: m_dacScanTypeParams){
-            it.second.min = extractSOAPCommandParameterInteger(msg,it.second.label+"_min" );
-            it.second.max = extractSOAPCommandParameterInteger(msg,it.second.label+"_max" );
-            it.second.scan = extractSOAPCommandParameterBoolean(msg,it.second.label+"_scan" );
-            CMSGEMOS_DEBUG("GLIBManager::calibrateAction for calibration "<< m_calType <<" parameter retrieved: " << it.second.label << " min = " << it.second.min << " max = " << it.second.max );
-        }
-
-        
-        return gem::utils::soap::GEMSOAPToolBox::makeSOAPReply(commandName, "DACCANV3recieved");
-        
-    }
-    else{
-        if (m_calParams.find(m_calType)!=m_calParams.end()){
-            for (auto it: m_calParams.find(m_calType)->second) {
-                it.second = extractSOAPCommandParameterInteger(msg,it.first);
-                CMSGEMOS_DEBUG("GLIBManager::calibrateAction for calibration "<< m_calType <<" parameter retrieved: " << it.first << " = " << it.second);
-            }
-        }
-        if (m_calStringParams.find(m_calType)!=m_calStringParams.end()){
-            for (auto it: m_calStringParams.find(m_calType)->second) {
-                it.second = extractSOAPCommandParameterString(msg,it.first);
-                CMSGEMOS_DEBUG("GLIBManager::calibrateAction for calibration "<< m_calType <<" parameter retrieved: " << it.first << " = " << it.second);
-            }
-        }
-        CMSGEMOS_INFO("GLIBManager::calibrateAction returning answer");
-    }
-    return 
-            gem::utils::soap::GEMSOAPToolBox::makeSOAPReply(commandName, "Calibrated");
-    
-}
 
 void gem::hw::glib::GLIBManager::createGLIBInfoSpaceItems(is_toolbox_ptr is_glib, glib_shared_ptr glib)
 {
@@ -993,117 +938,16 @@ void gem::hw::glib::GLIBManager::dumpGLIBFIFO(xgi::Input* in, xgi::Output* out)
   dynamic_cast<GLIBManagerWeb*>(p_gemWebInterface)->dumpGLIBFIFO(in, out);
 }
 
-std::string gem::hw::glib::GLIBManager::extractSOAPCommandParameterString(xoap::MessageReference const& msg,
-                                                     std::string const& parameterName)
-{
-  xdata::soap::Serializer serializer;
-  xdata::String tmpVal;
-  xoap::SOAPElement element = extractSOAPCommandParameterElement(msg, parameterName);
-  try
-    {
-      serializer.import(&tmpVal, element.getDOM());
-    }
-  catch(xcept::Exception& err)
-    {
-      std::string const msg =
-        toolbox::toString("Failed to import SOAP command parameter 'xdaq:%s': '%s'.",
-                          parameterName.c_str(),
-                          err.message().c_str());
-      CMSGEMOS_ERROR( msg);
-      
-    }
-  std::cout << "printing parameter str " <<parameterName << std::string(tmpVal)<<std::endl;
-  return std::string(tmpVal);
-}
 
-int gem::hw::glib::GLIBManager::extractSOAPCommandParameterInteger(xoap::MessageReference const& msg,
-                                                              std::string const& parameterName)
-{
-  xdata::soap::Serializer serializer;
-  xdata::Integer tmpVal;
-  xoap::SOAPElement element = extractSOAPCommandParameterElement(msg, parameterName);
-  try
-    {
-      serializer.import(&tmpVal, element.getDOM());
-    }
-  catch(xcept::Exception& err)
-    {
-      std::string const msg =
-        toolbox::toString("Failed to import SOAP command parameter 'xdaq:%s': '%s'.",
-                          parameterName.c_str(),
-                          err.message().c_str());
-      CMSGEMOS_ERROR( msg);
-      
-    }
-  return int(tmpVal);
-}
 
-bool gem::hw::glib::GLIBManager::extractSOAPCommandParameterBoolean(xoap::MessageReference const& msg,
-                                                              std::string const& parameterName)
-{
-  xdata::soap::Serializer serializer;
-  xdata::Boolean tmpVal;
-  xoap::SOAPElement element = extractSOAPCommandParameterElement(msg, parameterName);
-  try
-    {
-      serializer.import(&tmpVal, element.getDOM());
-    }
-  catch(xcept::Exception& err)
-    {
-      std::string const msg =
-        toolbox::toString("Failed to import SOAP command parameter 'xdaq:%s': '%s'.",
-                          parameterName.c_str(),
-                          err.message().c_str());
-      CMSGEMOS_ERROR( msg);
-      
-    }
-  return bool(tmpVal);
-}
 
-xoap::SOAPElement gem::hw::glib::GLIBManager::extractSOAPCommandParameterElement(xoap::MessageReference const& msg,      std::string const& parameterName )
-{
-   
-    
-    for (auto li: msg->getSOAPPart().getEnvelope().getBody().getChildElements()) {
-        xoap::SOAPName name = (li).getElementName();
-        std::vector<xoap::SOAPElement> children = (li).getChildElements();
-        std::vector<xoap::SOAPElement>::iterator vi;
-       
-        for (vi = children.begin(); vi != children.end(); ++vi)
-            {
-                xoap::SOAPName childName = (*vi).getElementName();
-                
-                if (childName.getLocalName()==parameterName){
-                    CMSGEMOS_DEBUG("GLIBManager::extractSOAPCommandParameterElementc loading parameter  : "<< childName.getLocalName());
-                    return *vi;
-                }   
-            }
-    }
-    std::string const msgError =
-        toolbox::toString("Failed to import SOAP command parameter with name 'xdaq:%s'.",
-                          parameterName.c_str());
-    CMSGEMOS_ERROR( msgError);
+xoap::MessageReference  gem::hw::glib::GLIBManager::calibParamPrint(xoap::MessageReference msg) {
+    std::string commandName = "calibParamPrint";
+    CMSGEMOS_DEBUG("GLIBManager::calibParamPrint  gem::base::m_scanType  is  " << gem::base::GEMApplication::m_scanType);
+
+    CMSGEMOS_DEBUG("GLIBManager::calibParamPrint  gem::base::m_scanInfo.bag.scanType is " << gem::base::GEMApplication::m_scanInfo.bag.scanType);
+    return 
+        gem::utils::soap::GEMSOAPToolBox::makeSOAPReply(commandName, "CalibrationParametersPrinted");
     
 }
 
-void gem::hw::glib::GLIBManager::initializeOpticalLinksMask(std::map<std::string, uint32_t>* amcOpticalLinks){
-
-    std::stringstream t_stream;
-    //for (unsigned int i = 0; i < NSHELF; ++i) {
-    for ( int i = 0; i < m_nShelves.value_; ++i) {
-        t_stream.clear();
-        t_stream.str(std::string());
-        t_stream << "shelf"<< std::setfill('0') << std::setw(2) << i+1;
-        for (unsigned int j = 0; j < gem::base::GEMApplication::MAX_AMCS_PER_CRATE; ++j) { //SHELF.AMC
-            t_stream.clear();
-            t_stream.str(std::string());
-            t_stream << "shelf"<< std::setfill('0') << std::setw(2) << i+1 << ".amc" << std::setfill('0') << std::setw(2) << j+1;
-            //t_stream << "shelf"<< std::setfill('0') << std::setw(2) << i+1 << "amc" << std::setfill('0') << std::setw(2) << j+1;
-            
-            std::string amc_id = t_stream.str();
-            amcOpticalLinks->emplace(amc_id, 0);
-           
-            amcOpticalLinks->find(amc_id)->second = 0;
-        }
-    } //end loop over shelves
-}

@@ -77,8 +77,8 @@ namespace gem {
           virtual void resetAction(toolbox::Event::Reference e)
             throw (toolbox::fsm::exception::Exception);
           
-          xoap::MessageReference calibrateAction(xoap::MessageReference mns);//CG
          
+          xoap::MessageReference calibParamPrint(xoap::MessageReference msg) ;//CG
 	  /* bool is_initialized_, is_configured_, is_running_, is_paused_, is_resumed_; */ ///< FIXME REMOVE UNUSED
 
         protected:
@@ -185,7 +185,7 @@ namespace gem {
                                                   {"vfatChMin" , 0},
                                                       {"vfatChMax" , 127},
                                                       
-                                                          {"trigThrottle"  ,0},
+                                                         
                                                               {"signalSourceType"       , 0},
                                                                   {"pulseDelay" , 40},
                                                                       }},
@@ -245,17 +245,7 @@ namespace gem {
                   {gem::calib::calType::TRIMDAC  , {{"trimValues" , "-63,0,63"},  }},
                       
                       };
-          std::string extractSOAPCommandParameterString(xoap::MessageReference const& msg,
-                                                        std::string const& parameterName);
-          int extractSOAPCommandParameterInteger(xoap::MessageReference const& msg,
-                                                              std::string const& parameterName);
-
-           bool extractSOAPCommandParameterBoolean(xoap::MessageReference const& msg,
-                                                              std::string const& parameterName);
-
-          xoap::SOAPElement extractSOAPCommandParameterElement(xoap::MessageReference const& msg,
-                                                               std::string const& parameterName);
-
+         
           std::map<gem::calib::dacScanType, gem::calib::Calibration::dacFeature> m_dacScanTypeParams{
               {gem::calib::dacScanType::CFG_CAL_DAC,{"CFG_CAL_DAC", 0, 255, false}},
                   {gem::calib::dacScanType::CFG_BIAS_PRE_I_BIT, {"CFG_BIAS_PRE_I_BIT", 0, 255, false}},
@@ -275,10 +265,7 @@ namespace gem {
                                                                           {gem::calib::dacScanType::CFG_VREF_ADC,{"CFG_VREF_ADC", 0, 3, false}}
             };
           
-           std::map<std::string, uint32_t> m_amcOpticalLinks;
-           void initializeOpticalLinksMask (std::map<std::string, uint32_t>* amcOpticalLinks);
-        private:
-           xdata::Integer m_nShelves;
+          
            
         };  // class GLIBManager
     }  // namespace gem::hw::glib

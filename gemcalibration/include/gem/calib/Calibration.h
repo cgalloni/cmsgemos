@@ -81,7 +81,7 @@ namespace gem {
                         {"vfatChMin" , "0"},
                         {"vfatChMax" , "127"},
                             //{"vt2"       , 100},// TODO:need to be taken from DB
-                        {"trigThrottle"  ,"0"},
+                            // {"trigThrottle"  ,"0"},
                         {"signalSourceType"       , "0"},
                         {"pulseDelay" , "40"},
                 }},
@@ -166,7 +166,7 @@ namespace gem {
                 {"vfatChMin" , "VFAT Ch min"},
                 {"vfatChMax" , "VFAT Ch max"},
                     //{"vt2"       , "CFG_THR_ARM_DAC"},// TODO:need to be taken from DB
-                {"trigThrottle"  , "Trigger throttle (int)"},
+                    //{"trigThrottle"  , "Trigger throttle (int)"},
                 {"pulseDelay", "Pulse delay (BX)"},
                 {"latency"   , "Latency (BX)"},
                 {"trimValues", "Points in dac range"}, // TODO:need to be implemented properly in the back end in order to get a given number of points {-63,0,63}
@@ -240,7 +240,7 @@ namespace gem {
             xdata::Integer m_nShelves;
             void sendSOAPMessageForDacScan();
             void sendSOAPMessageForCalibration();
-            
+            void sendSOAPMessageForPrintingCalParams();
              
             const std::map<std::string, calType_t> m_calTypeSelector{
                 {"GBT Phase Scan"                , GBTPHASE},
