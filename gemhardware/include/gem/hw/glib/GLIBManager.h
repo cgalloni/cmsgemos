@@ -75,8 +75,7 @@ namespace gem {
             throw (toolbox::fsm::exception::Exception);
 
           virtual void resetAction(toolbox::Event::Reference e)
-
-            throw (toolbox::fsm::exception::Exception) override;
+              throw (toolbox::fsm::exception::Exception) override;
 
         protected:
           /**
@@ -148,6 +147,7 @@ namespace gem {
 	  uint32_t m_lastLatency;         ///< Special variable for latency scan mode
           uint32_t m_lastVT1, m_lastVT2;  ///< Special variable for threshold scan mode 
 
+ 
         };  // class GLIBManager
     }  // namespace gem::hw::glib
   }  // namespace gem::hw

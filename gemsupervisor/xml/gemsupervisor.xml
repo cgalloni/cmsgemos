@@ -179,11 +179,7 @@
 
   <xc:Context url="http://localhost:2104">
     <xc:Application class="tcds::ici::ICIController" id="301" instance="0" network="local" >
-<<<<<<< HEAD
     </xc:Application>
-=======
-      </xc:Application>
->>>>>>> 1901280... DAC scan and OHmask parameters handling with SOAP from calibration UI to GLIB manager
 
     <xc:Application class="tcds::pi::PIController"   id="501" instance="0" network="local" >
     </xc:Application>

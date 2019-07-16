@@ -20,7 +20,16 @@ gem::base::GEMApplication::ScanInfo::ScanInfo()
   scanMax   = 0;
   stepSize  = 0;
   nTriggers = 0;
-
+  
+  nSamples = 0;
+  trigType = 0;          
+  l1aTime = 0;
+  mspl = 0;
+  vfatChMin = 0;
+  vfatChMax = 0;
+  signalSourceType = 0;
+  pulseDelay = 0;
+         
 }
 
 void gem::base::GEMApplication::ScanInfo::registerFields(xdata::Bag<gem::base::GEMApplication::ScanInfo>* bag)
@@ -160,6 +169,10 @@ gem::base::GEMApplication::GEMApplication(xdaq::ApplicationStub *stub)
   p_appInfoSpace->addItemChangedListener( "StepSize",      this);
 
   CMSGEMOS_DEBUG("GEMApplication::gem::base::GEMApplication constructed");
+
+
+  xoap::bind(this, &gem::base::GEMApplication::calibParamRetrieve, "calibParamRetrieve", XDAQ_NS_URI);
+  
 }
 
 
@@ -300,4 +313,74 @@ void gem::base::GEMApplication::xgiExpert(xgi::Input* in, xgi::Output* out)
 void gem::base::GEMApplication::jsonUpdate(xgi::Input* in, xgi::Output* out)
 {
   p_gemWebInterface->jsonUpdate(in, out);
+}
+
+
+xoap::MessageReference gem::base::GEMApplication::calibParamRetrieve(xoap::MessageReference msg) {
+    CMSGEMOS_INFO("GEMApplication::calibParamRetrieve activated");
+    //msg->writeTo(std::cout);
+ 
+    std::string commandName = "calibParamRetrieve";
+    if (msg.isNull()) {
+        CMSGEMOS_INFO("GEMApplication::calibParamRetrieve Null message received!");
+        XCEPT_RAISE(xoap::exception::Exception,"Null message received!");
+    }
+    CMSGEMOS_INFO("GEMApplication::calibParamRetrieve message received");
+
+    //initializeOpticalLinksMask(&m_amcOpticalLinks);
+    
+    //for (auto it:m_amcOpticalLinks){    
+    //    it.second = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,it.first);
+    //    CMSGEMOS_DEBUG("GEMApplication::calibParamRetrieve for optical link parameter retrieved: " << it.first << " = " << it.second);
+    //}
+    
+    
+    
+    m_scanInfo.bag.scanType = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"calType");
+    m_scanInfo.bag.scanMin = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"scanMin");;
+    m_scanInfo.bag.scanMax = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"scanMax");
+    m_scanInfo.bag.stepSize = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"stepSize");
+    // m_scanInfo.bag.nTriggers = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"nTriggers"); //TODO: DO we need it?
+
+    m_scanInfo.bag.nSamples = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"nSamples");
+    m_scanInfo.bag.trigType = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"trigType");          
+    m_scanInfo.bag.l1aTime = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"l1aTime");          
+    m_scanInfo.bag.mspl = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"mspl");
+    m_scanInfo.bag.vfatChMin = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"vfatChMin");
+    m_scanInfo.bag.vfatChMax = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"vfatChMax");
+    m_scanInfo.bag.signalSourceType = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"signalSourceType");
+    m_scanInfo.bag.pulseDelay = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"pulseDelay");
+          
+    
+    initializeOpticalLinksMask(&m_amcOpticalLinks);
+    for (auto it:m_amcOpticalLinks){    
+        it.second = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger( msg, it.first );
+        CMSGEMOS_DEBUG("gem::base::GEMApplication::calibParamRetrieve for optical link parameter retrieved: " << it.first << " = " << it.second);
+    }
+     
+    return 
+        gem::utils::soap::GEMSOAPToolBox::makeSOAPReply(commandName, "CalibrationParametersRetrieved");
+        
+    
+}
+void gem::base::GEMApplication::initializeOpticalLinksMask(std::map<std::string, uint32_t>* amcOpticalLinks){
+
+    std::stringstream t_stream;
+    //for (unsigned int i = 0; i < NSHELF; ++i) {
+    for ( int i = 0; i < m_nShelves.value_; ++i) {
+        t_stream.clear();
+        t_stream.str(std::string());
+        t_stream << "shelf"<< std::setfill('0') << std::setw(2) << i+1;
+        for (unsigned int j = 0; j < gem::base::GEMApplication::MAX_AMCS_PER_CRATE; ++j) { //SHELF.AMC
+            t_stream.clear();
+            t_stream.str(std::string());
+            t_stream << "shelf"<< std::setfill('0') << std::setw(2) << i+1 << ".amc" << std::setfill('0') << std::setw(2) << j+1;
+           
+            
+            std::string amc_id = t_stream.str();
+            amcOpticalLinks->emplace(amc_id, 0);
+           
+            amcOpticalLinks->find(amc_id)->second = 0;
+        }
+    } //end loop over shelves
 }
