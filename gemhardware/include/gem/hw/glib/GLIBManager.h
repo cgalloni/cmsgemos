@@ -132,6 +132,7 @@ namespace gem {
 
           mutable gem::utils::Lock m_deviceLock;  ///< [MAX_AMCS_PER_CRATE];
 
+
           std::array<glib_shared_ptr, MAX_AMCS_PER_CRATE> m_glibs;                      ///< HwGenericAMC pointers to be managed
           std::array<std::shared_ptr<GLIBMonitor>, MAX_AMCS_PER_CRATE> m_glibMonitors;  ///< AMCMonito pointers to be managed
           std::array<is_toolbox_ptr, MAX_AMCS_PER_CRATE> is_glibs;                      ///< AMC InfoSpace pointers to be managed
