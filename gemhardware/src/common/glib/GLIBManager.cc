@@ -339,25 +339,65 @@ void gem::hw::glib::GLIBManager::configureAction()
         amc->configureDAQModule(enableZS, doPhaseShift, runType, 0xfaac, m_relockPhase.value_, m_bc0LockPhaseShift.value_);
       } GEM_CATCH_RPC_ERROR("GLIBManager::configureAction", gem::hw::glib::exception::ConfigurationProblem);
 
-      if (m_scanType.value_ == 2) {
-        CMSGEMOS_INFO("GLIBManager::configureAction: FIRST  " << m_scanMin.value_);
+      if (m_scanInfo.bag.scanType.value_ == 2) {
 
-	amc->setDAQLinkRunType(0x2);
-	amc->setDAQLinkRunParameter(0x1,m_scanMin.value_);
-	// amc->setDAQLinkRunParameter(0x2,VT1);  // set these at start so DQM has them?
-	// amc->setDAQLinkRunParameter(0x3,VT2);  // set these at start so DQM has them?
-      } else if (m_scanType.value_ == 3) {
-	uint32_t initialVT1 = m_scanMin.value_;
-	uint32_t initialVT2 = 0;  // std::max(0,(uint32_t)m_scanMax.value_);
-        CMSGEMOS_INFO("GLIBManager::configureAction FIRST VT1 " << initialVT1 << " VT2 " << initialVT2);
+      // amc->scaHardResetEnable(false);
+      // amc->resetL1ACount();
+      // amc->resetCalPulseCount();
 
-	amc->setDAQLinkRunType(0x3);
-	// amc->setDAQLinkRunParameter(0x1,latency);  // set this at start so DQM has it?
-	amc->setDAQLinkRunParameter(0x2,initialVT1);
-	amc->setDAQLinkRunParameter(0x3,initialVT2);
+      // if (m_uhalPhaseShift.value_) {
+      //   CMSGEMOS_INFO("GLIBManager::configureAction uhal phase shifting disabled");
+      //   try { // if we fail, do we go to error?
+      //     amc->ttcMMCMPhaseShift(m_relockPhase.value_, m_bc0LockPhaseShift.value_);
+      //   } GEM_CATCH_RPC_ERROR("GLIBManager::configureAction", gem::hw::glib::exception::PhaseShiftError);
+      // }
+
+      // // reset the DAQ (could move this to HwGenericAMC and eventually  a corresponding RPC module
+      // try { // FIXME if we fail, do we go to error?
+      //   amc->configure(info.enableZS.value_,0x0,0xfaac);
+      //   // amc->setL1AEnable(false);
+      //   // amc->disableDAQLink();
+      //   // amc->resetDAQLink();
+      //   // amc->enableDAQLink(0x4);  // FIXME
+      //   // amc->setZS(info.enableZS.value_);
+      //   // amc->setDAQLinkRunType(0x0);
+      //   // amc->setDAQLinkRunParameters(0xfaac);
+      // } GEM_CATCH_RPC_ERROR("GLIBManager::configureAction", gem::hw::glib::exception::ConfigurationProblem);
+      // catch (xhal::utils::XHALRPCNotConnectedException const& e) {
+      //   std::stringstream errmsg;
+      //   errmsg << "GLIBManager::configureAction unable to configure: " << e.what();
+      //   // fireEvent("Fail");
+      //   XCEPT_RAISE(gem::hw::glib::exception::ConfigurationProblem, errmsg.str());
+      // } catch (xhal::utils::XHALRPCException const& e) {
+      //   std::stringstream errmsg;
+      //   errmsg << "GLIBManager::configureAction unable to configure: " << e.what();
+      //   // fireEvent("Fail");
+      //   XCEPT_RAISE(gem::hw::glib::exception::ConfigurationProblem, errmsg.str());
+      // } catch (gem::hw::exception::RPCMethodError const& e) {
+      //   std::stringstream errmsg;
+      //   errmsg << "GLIBManager::configureAction unable to configure: " << e.what();
+      //   // fireEvent("Fail");
+      //   XCEPT_RAISE(gem::hw::glib::exception::ConfigurationProblem, errmsg.str());
+      // }
+
+          CMSGEMOS_INFO("GLIBManager::configureAction: FIRST  " << m_scanMin.value_);
+          
+          amc->setDAQLinkRunType(0x2);
+          amc->setDAQLinkRunParameter(0x1,m_scanInfo.bag.scanMin.value_);
+          // amc->setDAQLinkRunParameter(0x2,VT1);  // set these at start so DQM has them?
+          // amc->setDAQLinkRunParameter(0x3,VT2);  // set these at start so DQM has them?
+      } else if (m_scanInfo.bag.scanType.value_ == 3) {
+          uint32_t initialVT1 = m_scanInfo.bag.scanMin.value_;
+          uint32_t initialVT2 = 0;  // std::max(0,(uint32_t)m_scanMax.value_);
+          CMSGEMOS_INFO("GLIBManager::configureAction FIRST VT1 " << initialVT1 << " VT2 " << initialVT2);
+          
+          amc->setDAQLinkRunType(0x3);
+          // amc->setDAQLinkRunParameter(0x1,latency);  // set this at start so DQM has it?
+          amc->setDAQLinkRunParameter(0x2,initialVT1);
+          amc->setDAQLinkRunParameter(0x3,initialVT2);
       } else {
-	amc->setDAQLinkRunType(0x1);          // FIXME duplicated in configureDAQModule call
-	amc->setDAQLinkRunParameters(0xfaac); // FIXME duplicated in configureDAQModule call
+          amc->setDAQLinkRunType(0x1);          // FIXME duplicated in configureDAQModule call
+          amc->setDAQLinkRunParameters(0xfaac); // FIXME duplicated in configureDAQModule call
       }
 
       // what else is required for configuring the GLIB?
@@ -383,14 +423,14 @@ void gem::hw::glib::GLIBManager::configureAction()
 void gem::hw::glib::GLIBManager::startAction()
   throw (gem::hw::glib::exception::Exception)
 {
-  if (m_scanType.value_ == 2) {
+  if (m_scanInfo.bag.scanType.value_ == 2) {
     CMSGEMOS_INFO("GLIBManager::startAction() " << std::endl << m_scanInfo.bag.toString());
-    m_lastLatency = m_scanMin.value_;
+    m_lastLatency = m_scanInfo.bag.scanMin.value_;
     m_lastVT1 = 0;
-  } else if (m_scanType.value_ == 3) {
+  } else if (m_scanInfo.bag.scanType.value_ == 3) {
     CMSGEMOS_INFO("GLIBManager::startAction() " << std::endl << m_scanInfo.bag.toString());
     m_lastLatency = 0;
-    m_lastVT1 = m_scanMin.value_;
+    m_lastVT1 = m_scanInfo.bag.scanMin.value_;
   }
 
   CMSGEMOS_INFO("GLIBManager::startAction begin");
@@ -461,7 +501,7 @@ void gem::hw::glib::GLIBManager::pauseAction()
       CMSGEMOS_DEBUG("connected a card in slot " << (slot+1));
 
       if (m_scanType.value_ == 2) {
-	uint8_t updatedLatency = m_lastLatency + m_stepSize.value_;
+	uint8_t updatedLatency = m_lastLatency + m_scanInfo.bag.stepSize.value_;
         CMSGEMOS_INFO("GLIBManager::pauseAction LatencyScan AMC" << (slot+1) << " Latency " << (int)updatedLatency);
 
         // wait for events to finish building
