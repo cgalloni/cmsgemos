@@ -2,7 +2,6 @@
 # Makefile for gemhardware package
 #
 
-
 Project=cmsgemos
 ShortProject=gem
 Package=gemhardware
@@ -12,7 +11,7 @@ PackageName=hw
 
 GEMHARDWARE_VER_MAJOR=1
 GEMHARDWARE_VER_MINOR=0
-GEMHARDWARE_VER_PATCH=1
+GEMHARDWARE_VER_PATCH=0
 
 include $(BUILD_HOME)/$(Project)/config/mfDefsGEM.mk
 include $(BUILD_HOME)/$(Project)/config/mfPythonDefsGEM.mk
