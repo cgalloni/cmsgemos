@@ -279,6 +279,9 @@ namespace gem {
          static int extractSOAPCommandParameterInteger(xoap::MessageReference const& msg,   std::string const& parameterName);
          static std::string extractSOAPCommandParameterString(xoap::MessageReference const& msg, std::string const& parameterName);
          static bool extractSOAPCommandParameterBoolean(xoap::MessageReference const& msg,   std::string const& parameterName);
+
+        
+         
          static xoap::SOAPElement extractSOAPCommandParameterElement(xoap::MessageReference const& msg, std::string const& parameterName);
         
         // methods copied from emu/soap/toolbox

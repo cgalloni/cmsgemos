@@ -202,7 +202,7 @@ namespace gem {
           xdata::UnsignedInteger32 stepSize;
           xdata::UnsignedInteger64 nTriggers;
 
-          xdata::UnsignedInteger32 nSamples;
+        
           xdata::UnsignedInteger32 trigType;          
           xdata::UnsignedInteger32 l1aTime;
           xdata::UnsignedInteger32 mspl;
@@ -219,7 +219,6 @@ namespace gem {
                << "scanMax:"  << scanMax.toString()  << std::endl
                << "stepSize:" << stepSize.toString() << std::endl
                << "nTrigger:" << nTriggers.value_    << std::endl
-               << "nSamples:" << nSamples.value_     << std::endl
                << "trigType:" << trigType.value_     << std::endl
                << "l1aTime:"  << l1aTime.value_     << std::endl
                << "mspl:"     << mspl.value_     << std::endl
@@ -264,21 +263,12 @@ namespace gem {
         xdata::UnsignedInteger32 m_stepSize;
         xdata::UnsignedInteger64 m_nScanTriggers;
 
-        xdata::UnsignedInteger32 m_nSamples;
-        xdata::UnsignedInteger32 m_trigType;
-        xdata::UnsignedInteger32 m_l1aTime;
-        xdata::UnsignedInteger32 m_mspl;
-        xdata::UnsignedInteger32 m_vfatChMin;
-        xdata::UnsignedInteger32 m_vfatChMax;
-        xdata::UnsignedInteger32 m_signalSourceType;
-        xdata::UnsignedInteger32 m_pulseDelay;
+        
 
         std::shared_ptr<gem::utils::db::GEMDatabaseUtils> p_gemDBHelper;
 
 
-        std::map<std::string, uint32_t> m_amcOpticalLinks;
-        void initializeOpticalLinksMask (std::map<std::string, uint32_t>* amcOpticalLinks);
-        xdata::Integer m_nShelves=2;
+       
         
       private:
       };

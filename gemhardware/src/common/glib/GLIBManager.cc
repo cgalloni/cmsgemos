@@ -389,15 +389,15 @@ void gem::hw::glib::GLIBManager::configureAction()
       //   XCEPT_RAISE(gem::hw::glib::exception::ConfigurationProblem, errmsg.str());
       // }
 
-      if (m_scanType.value_ == 2) {
+      if (m_scanInfo.bag.scanType.value_ == 2) {
         CMSGEMOS_INFO("GLIBManager::configureAction: FIRST  " << m_scanMin.value_);
 
 	amc->setDAQLinkRunType(0x2);
-	amc->setDAQLinkRunParameter(0x1,m_scanMin.value_);
+	amc->setDAQLinkRunParameter(0x1,m_scanInfo.bag.scanMin.value_);
 	// amc->setDAQLinkRunParameter(0x2,VT1);  // set these at start so DQM has them?
 	// amc->setDAQLinkRunParameter(0x3,VT2);  // set these at start so DQM has them?
-      } else if (m_scanType.value_ == 3) {
-	uint32_t initialVT1 = m_scanMin.value_;
+      } else if (m_scanInfo.bag.scanType.value_ == 3) {
+	uint32_t initialVT1 = m_scanInfo.bag.scanMin.value_;
 	uint32_t initialVT2 = 0;  // std::max(0,(uint32_t)m_scanMax.value_);
         CMSGEMOS_INFO("GLIBManager::configureAction FIRST VT1 " << initialVT1 << " VT2 " << initialVT2);
 
@@ -470,14 +470,14 @@ void gem::hw::glib::GLIBManager::configureAction()
 void gem::hw::glib::GLIBManager::startAction()
   throw (gem::hw::glib::exception::Exception)
 {
-  if (m_scanType.value_ == 2) {
+  if (m_scanInfo.bag.scanType.value_ == 2) {
     CMSGEMOS_INFO("GLIBManager::startAction() " << std::endl << m_scanInfo.bag.toString());
-    m_lastLatency = m_scanMin.value_;
+    m_lastLatency = m_scanInfo.bag.scanMin.value_;
     m_lastVT1 = 0;
-  } else if (m_scanType.value_ == 3) {
+  } else if (m_scanInfo.bag.scanType.value_ == 3) {
     CMSGEMOS_INFO("GLIBManager::startAction() " << std::endl << m_scanInfo.bag.toString());
     m_lastLatency = 0;
-    m_lastVT1 = m_scanMin.value_;
+    m_lastVT1 = m_scanInfo.bag.scanMin.value_;
   }
 
   CMSGEMOS_INFO("GLIBManager::startAction begin");
@@ -563,7 +563,7 @@ void gem::hw::glib::GLIBManager::pauseAction()
       CMSGEMOS_DEBUG("connected a card in slot " << (slot+1));
 
       if (m_scanType.value_ == 2) {
-	uint8_t updatedLatency = m_lastLatency + m_stepSize.value_;
+	uint8_t updatedLatency = m_lastLatency + m_scanInfo.bag.stepSize.value_;
         CMSGEMOS_INFO("GLIBManager::pauseAction LatencyScan AMC" << (slot+1) << " Latency " << (int)updatedLatency);
 
         // wait for events to finish building

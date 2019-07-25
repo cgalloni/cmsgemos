@@ -840,6 +840,8 @@ bool gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterBoolean(xoap::
   return bool(tmpVal);
 }
 
+
+
 xoap::SOAPElement gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterElement(xoap::MessageReference const& msg, std::string const& parameterName )
 {
     log4cplus::Logger m_gemLogger(log4cplus::Logger::getInstance("GEMSOAPToolBoxLogger"));
