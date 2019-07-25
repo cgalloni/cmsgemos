@@ -145,9 +145,9 @@ namespace gem {
           xdata::Boolean m_bc0LockPhaseShift;  ///< Use BC0 to find the best phase during the phase shifting procedure
           xdata::Boolean m_relockPhase;        ///< Relock the phase during phase shifting
 
-	  uint32_t m_lastLatency;         ///< Special variable for latency scan mode
+          uint32_t m_lastLatency;         ///< Special variable for latency scan mode
           uint32_t m_lastVT1, m_lastVT2;  ///< Special variable for threshold scan mode 
-
+          xoap::MessageReference calibParamPrint(xoap::MessageReference msg);
  
         };  // class GLIBManager
     }  // namespace gem::hw::glib

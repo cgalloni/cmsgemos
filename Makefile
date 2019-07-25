@@ -11,7 +11,6 @@ SUBPACKAGES := \
         gempython \
         gemdaqmonitor \
         gemonlinedb \
-        gemcalibration \
         # gemHwMonitor \
 
 # SUBPACKAGES.DOC      := $(patsubst %,%.doc,    ${SUBPACKAGES})
@@ -161,8 +160,6 @@ gemonlinedb: gemutils gembase
 gemreadout: gemutils gembase gemhwdevices
 
 gemdaqmonitor: gembase gemhwdevices
-
-gemcalibration: gemutils gembase
 
 print-env:
 	@echo BUILD_HOME    $(BUILD_HOME)
