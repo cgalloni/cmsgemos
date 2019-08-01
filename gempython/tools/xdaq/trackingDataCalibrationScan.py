@@ -1,9 +1,7 @@
 #!/bin/env python
 
-from gempython.utils.gemlogger import colors, printRed
+from gempython.utils.gemlogger import colors, getGEMLogger, printRed
 
-# FIXME place in a HwAMC class or HwVFAT?
-# FIXME place in hw_constants.py?
 # From https://github.com/cms-gem-daq-project/cmsgemos/issues/230
 dict_scanRegsByRunType = {
             0x2:"CFG_LATENCY",
@@ -11,7 +9,7 @@ dict_scanRegsByRunType = {
             0x4:"CFG_CAL_DAC"
         }
 
-def toggleSettings4DAQ(amcMask, chan, dict_ohMasks, dict_vfatBoards, dict_vfatMasks, runParams, runType, enableCal=True, enableRun=True):
+def toggleSettings4DAQ(amcMask, chan, dict_ohMasks, dict_amcBoards, dict_vfatBoards, dict_vfatMasks, runParams, runType, enableCal=True, enableRun=True):
     """
     Toggles both DAQ settings and calpulse settings of VFAT3s.
     Triggers should be stopped before calling this method
@@ -22,6 +20,7 @@ def toggleSettings4DAQ(amcMask, chan, dict_ohMasks, dict_vfatBoards, dict_vfatMa
     dict_ohMasks    - dictionary of integers where the keys are AMC slot numbers and the values are
                       a 12 bit number representing the ohMask; a 1 in the N^th bit means use the N^th
                       optohybrid
+    dict_amcBoards  - dictionary of uhal._core.HwInterface objects where the key values are AMC Slot Numbers
     dict_vfatBoards - dictionary of HwVFAT objects where the key values are AMC Slot Numbers 
     dict_vfatMasks  - dictionary of ctype arrays; each ctype array has a size of 12 and each array 
                       position stores the vfatmask values to use with the optohybrid at (slot,link).
@@ -43,8 +42,9 @@ def toggleSettings4DAQ(amcMask, chan, dict_ohMasks, dict_vfatBoards, dict_vfatMa
         thisSlot = amcN+1
 
         # Update RunParams and RunType words
-        dict_vfatBoards[thisSlot].parentOH.parentAMC.setRunParams(runParams)
-        dict_vfatBoards[thisSlot].parentOH.parentAMC.setRunType(runType)
+        dict_amcBoards[thisSlot].getNode("GEM_AMC.DAQ.EXT_CONTROL.RUN_PARAMS").write(runParams)
+        dict_amcBoards[thisSlot].getNode("GEM_AMC.DAQ.EXT_CONTROL.RUN_TYPE").write(runType)
+        dict_amcBoards[thisSlot].dispatch()
 
         # Loop Over OH's on this AMC and CalPulse to this chan and set VFATs to run mode
         for ohN in range(dict_vfatBoards[thisSlot].parentOH.parentAMC.nOHs):
@@ -112,7 +112,6 @@ def trackingDataScan(args, runType):
 
     """
 
-
     from gempython.utils.gracefulKiller import GracefulKiller
     killer = GracefulKiller()
 
@@ -133,12 +132,14 @@ def trackingDataScan(args, runType):
 
     # Declare the following dictionaries
     from gempython.utils.nesteddict import nesteddict as ndict
+    dict_amcBoardsUHAL = ndict() # dict_amcBoardsUHAL[slot] = uhal._core.HwInterface(slot,args.shelf)
     dict_vfatBoards = ndict() # dict_vfatBoards[slot] = HwVFAT(args.shelf,slot, dummyLink) for this (args.shelf,slot)
     dict_ohMasks = ndict() # dict_ohMasks[slot] = ohMask for this (args.shelf,slot)
     dict_vfatMasks = ndict() #dict_vfatMasks[slot][link] = vfatmask for this (args.shelf,slot,link)
 
     # Create an AMC13 class object and stop triggers
-    import amc13, os
+    import amc13, os, uhal
+    uhal.setLogLevelTo( uhal.LogLevel.FATAL )
     connection_file = "%s/connections.xml"%(os.getenv("GEM_ADDRESS_TABLE_PATH"))
     amc13base  = "gem.shelf%02d.amc13"%(args.shelf)
     amc13board = amc13.AMC13(connection_file,"%s.T1"%(amc13base),"%s.T2"%(amc13base))
@@ -147,16 +148,22 @@ def trackingDataScan(args, runType):
 
     # Declare all hardware connections and set initial register values
     from gempython.tools.vfat_user_functions_xhal import HwVFAT
+    from gempython.tools.amc_user_functions_uhal import getAMCObject
+    import logging
+    gemlogger = getGEMLogger(__name__)
+    gemlogger.setLevel(logging.ERROR)
     for amcN in range(12):
         # Skip masked AMC's        
         if( not ((args.amcMask >> amcN) & 0x1)):
             continue
-        
-        # Open connection to the AMC
         thisSlot = amcN+1
+       
+        # Open connection to the AMC - uHAL
+        dict_amcBoardsUHAL[thisSlot] = getAMCObject(thisSlot,args.shelf,args.debug)
+
+        # Open connection to the AMC - RPC
         cardName = "gem-shelf%02d-amc%02d"%(args.shelf,thisSlot)
-        #dict_vfatBoards[thisSlot] = HwVFAT(cardName, -1, args.debug, args.gemType, args.detType) # Assign a dummy link for now
-        dict_vfatBoards[thisSlot] = HwVFAT(cardName, -1, args.debug) # Assign a dummy link for now
+        dict_vfatBoards[thisSlot] = HwVFAT(cardName, -1, args.debug, args.gemType, args.detType) # Assign a dummy link for now
 
         # Determine OH's present
         dict_ohMasks[thisSlot] = dict_vfatBoards[thisSlot].parentOH.parentAMC.getOHMask()
@@ -209,14 +216,25 @@ def trackingDataScan(args, runType):
             pass
 
         # Configure locally generated triggers for 4 L1A's per orbit
-        rate = (1.0 / 0.0000909091) * 4 # (1 / orbit period) * N_L1A's/orbit
+        rate = int((1.0 / 0.0000909091) * 4) # (1 / orbit period) * N_L1A's/orbit
         amc13board.configureLocalL1A(True, 1, args.nevts, rate, 0)
         pass
 
     # Perform the scan
+    from gempython.tools.hw_constants import vfatsPerGemVariant
+    vfatList = [x for x in range(vfatsPerGemVariant[args.gemType])]
+    msg = "%11s:: fedID n_L1A slot ohN %s"%('','   '.join(map(str, vfatList)))
+    print(msg)
     for dacVal in range(args.dacMin,args.dacMax+args.dacStep,args.dacStep):
         # stop triggers coming from AMC13
         amc13board.stopContinuousL1A()
+
+        # Get the FED ID
+        #sourceID = amc13board.read(1,"CONF.ID.SOURCE_ID")
+        sourceID = amc13board.read(amc13board.Board(1),"CONF.ID.SOURCE_ID") # readT1 in AMC13Tool
+
+        # Get Last L1A ID
+        lastL1A = amc13board.read(amc13board.Board(0),"STATUS.TTC.L1A_COUNTER") # readT2 in AMC13Tool
 
         # Loop over all AMCs and mark data as bad with RUN_TYPE and RUN_PARAMS words
         for amcN in range(12):
@@ -228,12 +246,14 @@ def trackingDataScan(args, runType):
             thisSlot = amcN+1
 
             # Mark data as invalid
-            dict_vfatBoards[thisSlot].parentOH.parentAMC.setRunParams(0x0)
-            dict_vfatBoards[thisSlot].parentOH.parentAMC.setRunType(0xf)
+            dict_amcBoardsUHAL[thisSlot].getNode("GEM_AMC.DAQ.EXT_CONTROL.RUN_PARAMS").write(0)
+            dict_amcBoardsUHAL[thisSlot].getNode("GEM_AMC.DAQ.EXT_CONTROL.RUN_TYPE").write(0xf)
+            dict_amcBoardsUHAL[thisSlot].dispatch()
 
             # Loop Over OH's on this AMC and set the scanReg to the reg of interest
             for ohN in range(dict_vfatBoards[thisSlot].parentOH.parentAMC.nOHs):
-                if ((dict_ohMasks[thisSlot] >> ohN) & 0x0):
+                #print("dict_ohMasks[{:d}] = 0x{:x}".format(thisSlot,dict_ohMasks[thisSlot]))
+                if (not ((dict_ohMasks[thisSlot] >> ohN) & 0x1)):
                     continue
 
                 # Set the link in dict_vfatBoards[thisSlot]
@@ -241,6 +261,15 @@ def trackingDataScan(args, runType):
 
                 # Write the DAC Value
                 dict_vfatBoards[thisSlot].writeAllVFATs(scanReg,dacVal,dict_vfatMasks[thisSlot][ohN])
+                
+                # Print current status to user
+                readBackVals = dict_vfatBoards[thisSlot].readAllVFATs(scanReg,dict_vfatMasks[thisSlot][ohN])
+                badreg = map(lambda isbad: 0 if isbad == dacVal else 1, readBackVals)
+                perreg = "%s0x%02x%s"
+                regmap = map(lambda currentVal: perreg%((colors.GREEN,currentVal&0xffff,colors.ENDC) if currentVal&0xffff==dacVal else (colors.RED,currentVal&0xffff,colors.ENDC) ), readBackVals)
+                msg = "%11s:: 0x%02x 0x%02x %2d %2d  %s"%("CurrentStep",sourceID,lastL1A,thisSlot,ohN,'   '.join(map(str, regmap)))
+                print(msg)
+
                 pass # End Loop over all OH's on this slot
             pass # End Loop over all AMC's on this shelf?
 
@@ -255,7 +284,7 @@ def trackingDataScan(args, runType):
                 #FIXME might need amc13board.enableLocalL1A(True) here?
 
                 # Set this channel to pulse for all VFATs and place all VFATs into run mode
-                toggleSettings4DAQ(args.amcMask, chan, dict_ohMasks, dict_vfatBoards, dict_vfatMasks, dacVal, runType, enableCal=True, enableRun=True)
+                toggleSettings4DAQ(args.amcMask, chan, dict_ohMasks, dict_amcBoardsUHAL, dict_vfatBoards, dict_vfatMasks, dacVal, runType, enableCal=True, enableRun=True)
 
                 # Send Triggers
                 #for evt in range(args.nevts):
@@ -266,7 +295,7 @@ def trackingDataScan(args, runType):
                 # FIXME might need a sleep after this...?
 
                 # Stop calpulse to this channel for all VFATs and take VFATs out of run mode
-                toggleSettings4DAQ(args.amcMask, chan, dict_ohMasks, dict_vfatBoards, dict_vfatMasks, 0x0, 0xf, enableCal=False, enableRun=False)
+                toggleSettings4DAQ(args.amcMask, chan, dict_ohMasks, dict_amcBoardsUHAL, dict_vfatBoards, dict_vfatMasks, 0x0, 0xf, enableCal=False, enableRun=False)
                 pass # End Loop over VFAT Channels
             pass # End if-elif statement
         pass # End Loop over DAC Range
@@ -310,9 +339,11 @@ if __name__ == '__main__':
     runTypeGroup.add_argument("--thrScan", help="Perform a scan of the CFG_THR_ARM_DAC register", action="store_true")
 
     # Optional Parameters
+    from gempython.tools.hw_constants import gemVariants
     parser.add_argument("-a","--amc13SendsCalPulses",help="If provided AMC13 will generate calpulse commands.  Otherwise the CTP7's will delay the original L1A received and generate a calpulse", action="store_true")
     parser.add_argument("-d","--debug", help="prints additional debugging information", action="store_true")
-    #parser.add_argument("--gemType",type=str,help="String that defines the GEM variant, available from the list: {0}".format(gemVariants.keys()),default="ge11")
+    parser.add_argument("--detType",type=str,help="String that defines the detector type within the GEM variant, available from the list: {0}".format(gemVariants.values()),default="short")
+    parser.add_argument("--gemType",type=str,help="String that defines the GEM variant, available from the list: {0}".format(gemVariants.keys()),default="ge11")
     parser.add_argument("--shelf", help="uTCA shelf number", type=int, default=1)
     # FIXME complete the parser
 
@@ -354,7 +385,7 @@ if __name__ == '__main__':
         pass
 
     if args.debug:
-        print("Executing Scan:")
+        print("Executing Scan: {:s}".format(dict_scanRegsByRunType[runType]))
 
     trackingDataScan(args, runType)
 
