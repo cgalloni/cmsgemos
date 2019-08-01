@@ -222,14 +222,13 @@ class HwAMC(object):
         if enable:
             self.writeRegister("GEM_AMC.TTC.GENERATOR.ENABLE",0x0)
             self.writeRegister("GEM_AMC.TTC.CTRL.CALIBRATION_MODE",0x1)
+            if not (pulseDelay > 0):
+                raise ValueError("AMC::configureCalMode() - pulseDelay must be greater than zero!")
+            else:
+                self.writeRegister("GEM_AMC.TTC.CTRL.CALPULSE_L1A_DELAY",pulseDelay)
         else:
             self.writeRegister("GEM_AMC.TTC.CTRL.CALIBRATION_MODE",0x0)
             pass
-
-        if not (pulseDelay > 0):
-            raise ValueError("AMC::configureCalMode() - pulseDelay must be greater than zero!")
-        else:
-            self.writeRegister("GEM_AMC.TTC.CTRL.CALPULSE_L1A_DELAY",pulseDelay)
 
         return
 
