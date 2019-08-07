@@ -1004,6 +1004,14 @@ class HwAMC(object):
 
         return self.ttcGenToggle(ohN, enable)
 
+    def ttcCmdCntReset(self,debug=False):
+        """
+        Resets the TTC Command Counters
+        """
+
+        self.writeRegister("GEM_AMC.TTC.CTRL.CNT_RESET",0x1,debug)
+        return
+
     def writeRegister(self, register, value, debug=False):
         """
         write value 'value' into register 'register' using remote procedure call
