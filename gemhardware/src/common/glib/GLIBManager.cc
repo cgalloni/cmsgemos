@@ -318,7 +318,7 @@ void gem::hw::glib::GLIBManager::configureAction()
   throw (gem::hw::glib::exception::Exception)
 {
   CMSGEMOS_DEBUG("GLIBManager::configureAction");
-
+  CMSGEMOS_INFO("GLIBManager::configureAction m_scanInfo.bag.scanType.value_ " << m_scanInfo.bag.scanType.value_ ); ///CG
   // FIXME make me more streamlined
   for (unsigned slot = 0; slot < MAX_AMCS_PER_CRATE; ++slot) {
     // usleep(10); // just for testing the timing of different applications
@@ -383,7 +383,9 @@ void gem::hw::glib::GLIBManager::configureAction()
           CMSGEMOS_INFO("GLIBManager::configureAction: FIRST  " << m_scanMin.value_);
           
           amc->setDAQLinkRunType(0x2);
-          amc->setDAQLinkRunParameter(0x1,m_scanInfo.bag.scanMin.value_);
+          amc->setDAQLinkRunParameter(0x1,m_scanInfo.bag.scanMin.value_); ///CG
+          CMSGEMOS_INFO("GLIBManager::configureAction:: exiting latency");
+          
           // amc->setDAQLinkRunParameter(0x2,VT1);  // set these at start so DQM has them?
           // amc->setDAQLinkRunParameter(0x3,VT2);  // set these at start so DQM has them?
       } else if (m_scanInfo.bag.scanType.value_ == 3) {
@@ -503,14 +505,14 @@ void gem::hw::glib::GLIBManager::pauseAction()
       if (m_scanType.value_ == 2) {
 	uint8_t updatedLatency = m_lastLatency + m_scanInfo.bag.stepSize.value_;
         CMSGEMOS_INFO("GLIBManager::pauseAction LatencyScan AMC" << (slot+1) << " Latency " << (int)updatedLatency);
-
+        CMSGEMOS_INFO("GLIBManager::pauseAction  amc->l1aFIFOIsEmpty() is " <<  amc->l1aFIFOIsEmpty()  ); //CG
         // wait for events to finish building
         while (!amc->l1aFIFOIsEmpty()) {
           CMSGEMOS_DEBUG("GLIBManager::pauseAction waiting for AMC" << (slot+1) << " to finish building events");
-          usleep(10);
+          usleep(10); 
         }
-        CMSGEMOS_DEBUG("GLIBManager::pauseAction AMC" << (slot+1) << " finished building events, updating run parameter "
-                       << (int)updatedLatency);
+        CMSGEMOS_INFO("GLIBManager::pauseAction AMC" << (slot+1) << " finished building events, updating run parameter "
+                      << (int)updatedLatency); //DEBUG
         amc->setDAQLinkRunParameter(0x1,updatedLatency);
       } else if (m_scanType.value_ == 3) {
         uint8_t updatedVT1 = m_lastVT1 + m_stepSize.value_;

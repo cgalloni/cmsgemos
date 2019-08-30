@@ -172,7 +172,7 @@ void gem::supervisor::GEMSupervisor::actionPerformed(xdata::Event& event)
 }
 
 void gem::supervisor::GEMSupervisor::init()
-{
+{ CMSGEMOS_INFO("GEMSupervisor::init() starting *************");///CG
   v_supervisedApps.clear();
   v_supervisedApps.reserve(0);
 
@@ -248,7 +248,8 @@ void gem::supervisor::GEMSupervisor::init()
       ->getContextDescriptor()->getURL();
     CMSGEMOS_INFO("RCMSStateListener found with url: " << m_rcmsStateListenerUrl.toString());
   }
-
+  
+  CMSGEMOS_DEBUG("GEMSupervisor::init::starting setupAppStateMonitoring()");
   // when to do this, have to make sure that all applications have been loaded...
   // p_gemMonitor->addInfoSpace("AppStateMonitoring", p_appStateInfoSpaceToolBox);
   dynamic_cast<gem::supervisor::GEMSupervisorMonitor*>(p_gemMonitor)->setupAppStateMonitoring();
@@ -259,7 +260,7 @@ void gem::supervisor::GEMSupervisor::init()
 // state transitions
 void gem::supervisor::GEMSupervisor::initializeAction()
 {
-  CMSGEMOS_INFO("GEMSupervisor::initializeAction start");
+    CMSGEMOS_INFO("GEMSupervisor::initializeAction start ************"); ////CG****
   CMSGEMOS_DEBUG("GEMSupervisor::initializeAction:: HandleTCDS is " << m_handleTCDS.value_);
 
   // moved here from constructor, this is not what i want but it's how XDAQ works with setDefaultParameters,
@@ -268,8 +269,11 @@ void gem::supervisor::GEMSupervisor::initializeAction()
   // reset the GEMInfoSpaceToolBox object?
   // where can we get some nice PNG images for our different applications?
   // getApplicationDescriptor()->setAttribute("icon","/gemdaq/gemsupervisor/images/supervisor/GEMSupervisor.png");
-  init();
 
+  CMSGEMOS_DEBUG("GEMSupervisor::initializeAction:: about to init CG "  );
+  init();
+  CMSGEMOS_DEBUG("GEMSupervisor::initializeAction:: jsut done init CG "  );
+  
   // while ((m_gemfsm.getCurrentState()) != m_gemfsm.getStateName(gem::base::STATE_CONFIGURING)) {  // deal with possible race condition
   while (!(m_globalState.getStateName() == "Initial" && getCurrentState() == "Initializing")) {
     CMSGEMOS_INFO("GEMSupervisor::initializeAction global state not in " << gem::base::STATE_INITIAL
@@ -302,12 +306,19 @@ void gem::supervisor::GEMSupervisor::initializeAction()
         for (auto j = i->begin(); j != i->end(); ++j) {
             CMSGEMOS_INFO("GEMSupervisor::initializeAction Halting " << (*j)->getClassName() 
                           << " in case it is not in 'Halted'"); //CG
-          if (((*j)->getClassName()).rfind("tcds::") != std::string::npos) {
+          if ( ((*j)->getClassName()).rfind("tcds::") != std::string::npos ) {
             CMSGEMOS_INFO("GEMSupervisor::initializeAction Halting " << (*j)->getClassName()
                           << " in case it is not in 'Halted'");
             // need to ensure leases are properly respected
             
             gem::utils::soap::GEMSOAPToolBox::sendCommand("Halt", p_appContext, p_appDescriptor, *j);
+          }
+          else if ( ((*j)->getClassName()).rfind("Calibration") != std::string::npos ) {
+            CMSGEMOS_INFO("GEMSupervisor::initializeAction Halting   ***** TO do soemthing to " << (*j)->getClassName()
+                          << " in case it is not in 'Halted'");
+            // need to ensure leases are properly respected
+            
+            // gem::utils::soap::GEMSOAPToolBox::sendCommand("Halt", p_appContext, p_appDescriptor, *j);
           } else {
             CMSGEMOS_INFO("GEMSupervisor::initializeAction Initializing " << (*j)->getClassName());
             gem::utils::soap::GEMSOAPToolBox::sendCommand("Initialize", p_appContext, p_appDescriptor, *j);
@@ -366,6 +377,9 @@ void gem::supervisor::GEMSupervisor::initializeAction()
     CMSGEMOS_ERROR(msg.str());
     fireEvent("Fail");
     m_globalState.update();
+
+    CMSGEMOS_INFO("GEMSupervisor::initializeAction ScanParameters from gem::base " <<  gem::base::GEMApplication::m_scanInfo.bag.scanType.value_ <<  " otherwise "<<m_scanInfo.bag.scanType.value_ ); ///CG
+    
   }
 
   // SHOULD ONLY REPORT "INITIALIZED" TO RCMS HERE
@@ -376,7 +390,7 @@ void gem::supervisor::GEMSupervisor::initializeAction()
 
 void gem::supervisor::GEMSupervisor::configureAction()
 {
-  CMSGEMOS_INFO("GEMSupervisor::configureAction start");
+    CMSGEMOS_INFO("GEMSupervisor::configureAction start  *************"); ///CG********
 
   while (!((m_globalState.getStateName() == "Halted"     && getCurrentState() == "Configuring") ||
            // (m_globalState.getStateName() == "Paused"     && getCurrentState() == "Configuring") || // FIXME do we allow this???
@@ -391,15 +405,18 @@ void gem::supervisor::GEMSupervisor::configureAction()
 
   try {
     for (auto i = v_supervisedApps.begin(); i != v_supervisedApps.end(); ++i) {
+        CMSGEMOS_INFO("GEMSupervisor::configureAction Setting ScanParameters from gem::base " <<  gem::base::GEMApplication::m_scanInfo.bag.scanType.value_ <<  " otherwise "<<m_scanInfo.bag.scanType.value_  ); //CG
+       
       sendCfgType("testCfgType", (*i));
       sendRunType("testRunType", (*i));
       sendRunNumber(10254, (*i));
-
+     
+      
       if (!(isGEMApplication((*i)->getClassName())))
         continue;
 
       if (m_scanInfo.bag.scanType.value_ == 2 || m_scanInfo.bag.scanType.value_ == 3) {
-        CMSGEMOS_INFO("GEMSupervisor::configureAction Setting ScanParameters " << (*i)->getClassName());
+          CMSGEMOS_INFO("GEMSupervisor::configureAction Setting ScanParameters  for scan " <<  m_scanInfo.bag.scanType.value_ <<" to application " << (*i)->getClassName());
 	sendScanParameters(*i);
       }
     }
@@ -572,9 +589,9 @@ void gem::supervisor::GEMSupervisor::startAction()
     m_scanParameter = m_scanInfo.bag.scanMin.value_;
     CMSGEMOS_INFO("GEMSupervisor::startAction Scan");
     if (m_scanType.value_ == 2) {
-      CMSGEMOS_INFO(" Latency " << m_scanMin.value_);
-    } else if(m_scanType.value_ == 3) {
-      CMSGEMOS_INFO(" VT1 " << m_scanMin.value_);
+        CMSGEMOS_INFO(" Latency " << m_scanInfo.bag.scanMin.value_);// m_scanMin.value_);
+    } else if(   m_scanInfo.bag.scanMin.value_){   // m_scanType.value_ == 3) {
+      CMSGEMOS_INFO(" VT1 " <<  m_scanInfo.bag.scanMin.value_);
     }
   }
 
@@ -1060,6 +1077,8 @@ bool gem::supervisor::GEMSupervisor::manageApplication(const std::string& classn
     if (m_otherClassesToSupport.count(classname) != 0)
     return true;  // include from list
   */
+  if (classname.find("gem::calib") != std::string::npos) //CG don not commit 
+    return false; 
   if (classname.find("gem::") != std::string::npos)
     return true;  // handle all GEM applications
   if (classname.find("PeerTransport") != std::string::npos)
@@ -1299,7 +1318,8 @@ xoap::MessageReference gem::supervisor::GEMSupervisor::EndScanPoint(xoap::Messag
 {
   std::string commandName = "EndScanPoint";
 
-  uint32_t updatedParameter = m_scanParameter + m_stepSize.value_;
+  //uint32_t updatedParameter = m_scanParameter + m_stepSize.value_; //CG
+  uint32_t updatedParameter = m_scanParameter + m_scanInfo.bag.stepSize.value_;
 
   CMSGEMOS_INFO("GEMSupervisor::EndScanPoint GlobalState = " << m_globalState.getStateName() << std::endl
                 << " GlobalStateMessage  = " << m_globalState.getStateName()  << std::endl

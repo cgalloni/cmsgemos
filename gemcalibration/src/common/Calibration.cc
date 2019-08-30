@@ -80,10 +80,16 @@ void gem::calib::Calibration::applyAction(xgi::Input* in, xgi::Output* out)
 {
     bool t_errorsOccured = false;
     cgicc::Cgicc cgi(in);
-    for (auto it: m_scanParams.find(m_calType)->second) {
-        it.second = cgi[it.first]->getValue();
-        CMSGEMOS_DEBUG("Calibration::applyAction for calibration "<< m_calType <<" : " << it.first << " = " << it.second);
+      
+    std::map<std::string, std::string >::iterator it = (m_scanParams.find(m_calType)->second).begin();
+    while (it!= (m_scanParams.find(m_calType)->second).end() ){
+        
+        it->second = cgi[it->first]->getValue();
+        CMSGEMOS_DEBUG("Calibration::applyAction for calibration "<< m_calType <<" : " << it->first << " = " << it->second);
+        it++;
     }
+    
+    
     
     std::stringstream t_stream;
     //for (unsigned int i = 0; i < NSHELF; ++i) {
@@ -162,7 +168,11 @@ void gem::calib::Calibration::applyAction(xgi::Input* in, xgi::Output* out)
     } else {
         *out << "{\"status\":0,\"alert\":\"Parameters successfully applied. Now you can run the scan.\"}";
     }
-    
+    ///Just for debugging TODO:Remove
+    for (auto it: m_scanParams.find(m_calType)->second) {
+        CMSGEMOS_DEBUG("Calibration::end of applyAction for calibration "<< m_calType <<" : " << it.first << " = " << it.second);
+      
+    }
       
     if (m_calType==DACSCANV3){
         sendSOAPMessageForDacScan();
@@ -295,7 +305,9 @@ void gem::calib::Calibration::fillDacScanBagFromConfigMap( std::unordered_map<st
     }
 }
 void gem::calib::Calibration::sendSOAPMessageForCalibration() {
- 
+
+   
+    
     //std::set<xdaq::ApplicationDescriptor*> used;
     std::set<std::string> groups = p_appZone->getGroupNames();
     for (auto i =groups.begin(); i != groups.end(); ++i) {
@@ -312,10 +324,10 @@ void gem::calib::Calibration::sendSOAPMessageForCalibration() {
         for (auto j = allApps.begin(); j != allApps.end(); ++j) {
             std::string classname = (*j)->getClassName();
 
-            CMSGEMOS_DEBUG("GEMCalibration:::init::xDAQ group: " << *i
+            CMSGEMOS_INFO("GEMCalibration:::init::xDAQ group: " << *i
                       << " allApp class name " << (*j)->getClassName());
             
-            if ((((*j)->getClassName()).rfind("GLIBManager") != std::string::npos)) {
+            if ((((*j)->getClassName()).rfind("GLIBManager") != std::string::npos) || (((*j)->getClassName()).rfind("AMC13Manager") != std::string::npos) || (((*j)->getClassName()).rfind("GEMSupervisor") != std::string::npos)) {
 
                  // if (((*j)->getClassName()).rfind("GEMApplication") != std::string::npos) {
                        
@@ -327,7 +339,7 @@ void gem::calib::Calibration::sendSOAPMessageForCalibration() {
                 
                 fillCalibConfigMap(m_calType,&calibConfigMap);
                
-                //printCalibConfigMap(&calibConfigMap);
+                printCalibConfigMap(&calibConfigMap);
                 fillCalibTypeConfigMap(m_calType,&calibTypeConfigMap);
                 std::unordered_map<std::string, xdata::Serializable*> bagFromMap;
                 xdata::Integer calType= m_calType;
@@ -339,6 +351,8 @@ void gem::calib::Calibration::sendSOAPMessageForCalibration() {
                 
                 CMSGEMOS_INFO("GEMCalibration::applying action sending SOAP message to GLIB Manager with unordered bag");
                 gem::utils::soap::GEMSOAPToolBox::sendCommandWithParameterBag(command, bagFromMap, p_appContext, p_appDescriptor, app);
+                printCalibConfigMap(&calibConfigMap);
+                
                 //gem::utils::soap::GEMSOAPToolBox::sendCommandWithParameterBag(command2, bagFromMap, p_appContext, p_appDescriptor, app);
       
             }

@@ -168,6 +168,9 @@ gem::hw::amc13::AMC13Manager::AMC13Manager(xdaq::ApplicationStub* stub)
   xoap::bind(this, &gem::hw::amc13::AMC13Manager::enableTriggers,  "enableTriggers",   XDAQ_NS_URI );
   xoap::bind(this, &gem::hw::amc13::AMC13Manager::disableTriggers, "disableTriggers",  XDAQ_NS_URI );
 
+
+  //xoap::bind<gem::base::GEMApplication>(this, &gem::base::GEMApplication::calibParamRetrieve, "calibParamRetrieve", XDAQ_NS_URI);
+  
   p_timer = toolbox::task::getTimerFactory()->createTimer("AMC13ScanTriggerCounter");
 
   m_updatedL1ACount = 0;
@@ -393,7 +396,8 @@ void gem::hw::amc13::AMC13Manager::initializeAction()
 }
 
 void gem::hw::amc13::AMC13Manager::configureAction()
-{
+{ CMSGEMOS_INFO("AMC13Manager::configureAction  m_scanInfo.bag.scanType.value_" <<  m_scanInfo.bag.scanType.value_);///CG
+    CMSGEMOS_INFO("AMC13Manager::configureAction  m_scanInfo.bag.trigType.value_" <<  m_scanInfo.bag.trigType.value_); ////CG
   /* REDUNDANT?
   if (m_enableLocalL1A) {
     m_L1Aburst = m_localTriggerConfig.bag.l1Aburst.value_;
@@ -430,7 +434,9 @@ void gem::hw::amc13::AMC13Manager::configureAction()
 
 void gem::hw::amc13::AMC13Manager::startAction()
 {
-  CMSGEMOS_DEBUG("AMC13Manager::Entering AMC13Manager::startAction()");
+    //CMSGEMOS_DEBUG("AMC13Manager::Entering AMC13Manager::startAction()");
+    CMSGEMOS_INFO("AMC13Manager::Entering AMC13Manager::startAction()");//CG prima era debug level
+
   // gem::base::GEMFSMApplication::enable();
   gem::utils::LockGuard<gem::utils::Lock> guardedLock(m_amc13Lock);
 
@@ -475,7 +481,10 @@ void gem::hw::amc13::AMC13Manager::startAction()
   }
 
   if (m_scanType.value_ == 2 || m_scanType.value_ == 3) {
-    CMSGEMOS_DEBUG("AMC13Manager::startAction Sending continuous triggers for ScanRoutines ");
+      //CMSGEMOS_DEBUG("AMC13Manager::startAction Sending continuous triggers for ScanRoutines ");
+      CMSGEMOS_INFO("AMC13Manager::startAction Sending continuous triggers for ScanRoutines "); //CG prima era debug level
+
+    
     // p_amc13->enableLocalL1A(m_enableLocalL1A);
 
     // if (m_enableLocalL1A) {
@@ -498,6 +507,7 @@ void gem::hw::amc13::AMC13Manager::startAction()
     toolbox::TimeVal start;
     start = toolbox::TimeVal::gettimeofday();
     p_timer->scheduleAtFixedRate(start, this, interval, 0, "" );
+    
   }  // end scan type
   CMSGEMOS_INFO("AMC13Manager::startAction end");
 }
@@ -811,10 +821,14 @@ xoap::MessageReference gem::hw::amc13::AMC13Manager::disableTriggers(xoap::Messa
 
 void gem::hw::amc13::AMC13Manager::timeExpired(toolbox::task::TimerEvent& event)
 {
+    //m_updatedL1ACount = p_amc13->read(::amc13::AMC13::T1,"STATUS.GENERAL.L1A_COUNT_LO"); //CG
   uint64_t currentTrigger = p_amc13->read(::amc13::AMC13::T1,"STATUS.GENERAL.L1A_COUNT_LO") - m_updatedL1ACount;
+  //m_nScanTriggers.value_=50; //CG TODO Remove
 
-  CMSGEMOS_DEBUG("AMC13Manager::timeExpried, NTriggerRequested = " << m_nScanTriggers.value_
-        << " currentT = " << currentTrigger << " triggercounter final =  " << m_updatedL1ACount );
+  // CMSGEMOS_DEBUG("AMC13Manager::timeExpried, NTriggerRequested = " << m_nScanTriggers.value_m)
+  //        << " currentT = " << currentTrigger << " triggercounter final =  " << m_updatedL1ACount );
+  CMSGEMOS_INFO("AMC13Manager::timeExpried, NTriggerRequested = " << m_nScanTriggers.value_
+                << " currentT = " << currentTrigger << " triggercounter final =  " << m_updatedL1ACount );//CG prima era debug level 
 
   if (currentTrigger >=  m_nScanTriggers.value_){
     if (m_enableLocalL1A) {

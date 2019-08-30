@@ -332,7 +332,8 @@ xoap::MessageReference gem::base::GEMApplication::calibParamRetrieve(xoap::Messa
     m_scanInfo.bag.scanType = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"calType");
     m_scanInfo.bag.scanMin = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"scanMin");;
     m_scanInfo.bag.scanMax = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"scanMax");
-    m_scanInfo.bag.stepSize = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"stepSize");
+    if (m_scanInfo.bag.scanType==2) { m_scanInfo.bag.stepSize = 1;}//CG use 1 for latency scan 
+    else m_scanInfo.bag.stepSize = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"stepSize");
     m_scanInfo.bag.nTriggers = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"nSamples");///TODO: change it everywhere?
     m_scanInfo.bag.trigType = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"trigType");          
     m_scanInfo.bag.l1aTime = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"l1aTime");          

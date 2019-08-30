@@ -4,7 +4,7 @@
               xmlns:xc="http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30">
 
 
-  <xc:Context url="http://gem904daq02:20502">
+  <xc:Context url="http://gem904daq04:20503">
      <xc:Application class="gem::calib::Calibration" id="30" instance="0" network="local">
       <properties xmlns="urn:xdaq-application:Calibration"
                   xsi:type="soapenc:Struct">
