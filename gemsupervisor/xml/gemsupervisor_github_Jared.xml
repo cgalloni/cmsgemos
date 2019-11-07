@@ -61,15 +61,12 @@
              <EnableLEMO             xsi:type="xsd:boolean">false</EnableLEMO>
              <!--<StartL1AGen            xsi:type="xsd:boolean">false</StartL1AGen>-->
 
-             <!--                                                                                                                                                                                                                                                                                                                                                            
-                 L1Amode: Select the mode of the local trigger generator                                                                                                                                                                                                                                                                                                     
-                          0 - per N orbit (N specified by period), always at BX 500                                                                                                                                                                                                                                                                                          
-                          1 - per N BX (N specified by period)                                                                                                                                                                                                                                                                                                               
-                          2 - random (rate specified by period, in 2Hz units)                                                                                                                                                                                                                                                                                                
-                 InternalPeriodicPeriod: frequency of trigger                                                                                                                                                                                                                                                                                                                
-                                                                                                                                                                                                                                                                                                                                                                             
-             -->
-             <InternalPeriodicPeriod xsi:type="xsd:unsignedInt">1</InternalPeriodicPeriod>
+             <!--  L1Amode: Select the mode of the local trigger generator
+                  0 - per N orbit (N specified by period), always at BX 500
+                  1 - per N BX (N specified by period)
+                  2 - random (rate specified by period, in 2Hz units)
+                  InternalPeriodicPeriod: frequency of trigger  -->
+             <InternalPeriodicPeriod xsi:type="xsd:unsignedInt">100</InternalPeriodicPeriod>
              <L1Aburst               xsi:type="xsd:unsignedInt">1</L1Aburst>
              <L1Amode                xsi:type="xsd:integer">0</L1Amode>
              <L1Arules               xsi:type="xsd:integer">0</L1Arules>
