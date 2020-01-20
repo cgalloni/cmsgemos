@@ -868,7 +868,7 @@ bool gem::base::GEMFSMApplication::stop(toolbox::task::WorkLoop *wl)
 {
   std::string msgBase = "[GEMFSMApplication::stop] ";
   m_wl_semaphore.take();
-  CMSGEMOS_INFO(msgBase << "stop called, current state: " << m_gemfsm.getCurrentState());
+  CMSGEMOS_INFO(msgBase << "stop called 1, current state: " << m_gemfsm.getCurrentState());
 
   // if (p_gemMonitor && !m_disableMonitoring) {
   //   // pause timers?
@@ -883,7 +883,7 @@ bool gem::base::GEMFSMApplication::stop(toolbox::task::WorkLoop *wl)
   while ((m_gemfsm.getCurrentState()) != m_gemfsm.getStateName(STATE_STOPPING)) {  // deal with possible race condition
     usleep(10);
   }
-  CMSGEMOS_DEBUG(msgBase << "stop called, current state: " << m_gemfsm.getCurrentState());
+  CMSGEMOS_INFO(msgBase << "stop called 2, current state: " << m_gemfsm.getCurrentState()); //CG was DEBUG
 
   try {
     m_progress = 0.0;

@@ -77,23 +77,27 @@ namespace gem {
                         {"l1aTime"   , "250"},
                         {"mspl"      , "4"},
                         {"scanMin"   , "0"},
-                        {"scanMax"   , "255"},
+                        {"scanMax"   , "300"},//"1023"},
                         {"vfatChMin" , "0"},
                         {"vfatChMax" , "127"},
                             //{"vt2"       , 100},// TODO:need to be taken from DB
                             // {"trigThrottle"  ,"0"},
                         {"signalSourceType"       , "0"},
-                        {"pulseDelay" , "40"},
+                        {"pulseDelay" , "0"},//40
+                        {"stepSize"   , "1"},
                 }},
                 {SCURVE,{
                         {"nSamples"  , "100"},
-                        {"trigType"  , "0"}, // TODO: TTC local should be only possible one
+                            //{"trigType"  , "0"}, // TODO: TTC local should be only possible one
                         {"l1aTime"   , "250"},
                         {"pulseDelay", "40"},
                         {"latency"   , "33"},
                         {"vfatChMin" , "0"},
                         {"vfatChMax" , "127"},
                         {"mspl"      , "4"},
+                        {"scanMin"   , "0"},
+                        {"scanMax"   , "255"},
+                       
                  }},
                  {SBITARMDACSCAN  ,{
                         {"comparatorType","0"},
@@ -110,7 +114,7 @@ namespace gem {
                    }},
                    {TRIMDAC  , {
                         {"nSamples"   , "100"},
-                        {"trigType"   , "0"}, // TODO: TTC local should be only possible one
+                            // {"trigType"   , "0"}, // TODO: TTC local should be only possible one
                         {"nSamples"   , "100"},
                         {"l1aTime"    , "250"},
                         {"pulseDelay" , "40"},
@@ -124,7 +128,7 @@ namespace gem {
                     }},
                     {CALIBRATEARMDAC,{
                         {"nSamples"  , "100"},
-                        {"trigType"  , "0"}, // TODO: TTC local should be only possible one
+                            //  {"trigType"  , "0"}, // TODO: TTC local should be only possible one
                         {"l1aTime"   , "250"},
                         {"pulseDelay", "40"},
                         {"latency"   , "33"},

@@ -15,10 +15,10 @@ namespace gem {
     typedef boost::unordered_map<GEMScanType::EGEMScanType, std::string> enumGEMScanTypeToString;
 
     const enumGEMRunTypeToString GEMRunTypeToString = boost::assign::map_list_of
-      (GEMRunType::DATA     , "DATA"     )
-      (GEMRunType::COSMIC   , "COSMIC"   )
-      (GEMRunType::TESTSTAND, "TESTSTAND")
-      (GEMRunType::SCAN     , "SCAN"     );
+        (GEMRunType::DATA     , "DATA"     )
+        (GEMRunType::COSMIC   , "COSMIC"   )
+        (GEMRunType::TESTSTAND, "TESTSTAND")
+        (GEMRunType::SCAN     , "SCAN"     );
 
     const enumGEMScanTypeToString GEMScanTypeToString = boost::assign::map_list_of
       (GEMScanType::THRESHOLD, "THRESHOLD")

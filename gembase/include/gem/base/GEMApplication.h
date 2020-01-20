@@ -201,7 +201,7 @@ namespace gem {
           xdata::UnsignedInteger32 scanMax;
           xdata::UnsignedInteger32 stepSize;
           xdata::UnsignedInteger64 nTriggers;
-
+          xdata::Boolean calMode;
         
           xdata::UnsignedInteger32 trigType;          
           xdata::UnsignedInteger32 l1aTime;
@@ -210,6 +210,7 @@ namespace gem {
           xdata::UnsignedInteger32 vfatChMax;
           xdata::UnsignedInteger32 signalSourceType;
           xdata::UnsignedInteger32 pulseDelay;
+          xdata::UnsignedInteger32 latency;
           
           
           inline std::string toString() {
@@ -226,6 +227,7 @@ namespace gem {
                << "vfatChMax:"<< vfatChMax.value_     << std::endl
                << "signalSourceType:" << signalSourceType.value_     << std::endl
                << "pulseDelay:" << pulseDelay.value_     << std::endl
+               << "latency:" << latency.value_     << std::endl
           
                 
                << std::endl;

@@ -179,7 +179,7 @@ void gem::calib::Calibration::applyAction(xgi::Input* in, xgi::Output* out)
     } else {
         sendSOAPMessageForCalibration();
 
-        sendSOAPMessageForPrintingCalParams();
+         sendSOAPMessageForPrintingCalParams();
     }
     
 }
@@ -355,7 +355,7 @@ void gem::calib::Calibration::sendSOAPMessageForCalibration() {
                 
                 //gem::utils::soap::GEMSOAPToolBox::sendCommandWithParameterBag(command2, bagFromMap, p_appContext, p_appDescriptor, app);
       
-            }
+                }
                     
         }
     }
@@ -381,7 +381,7 @@ void gem::calib::Calibration::sendSOAPMessageForDacScan(){
         for (auto j = allApps.begin(); j != allApps.end(); ++j) {
             std::string classname = (*j)->getClassName();
             
-            if (((*j)->getClassName()).rfind("GLIBManager") != std::string::npos) {
+            //if (((*j)->getClassName()).rfind("GLIBManager") != std::string::npos) {
                        
                 xdaq::ApplicationDescriptor* app=(xdaq::ApplicationDescriptor*) *j;
                 std::string command = "calibrateAction"; 
@@ -395,7 +395,7 @@ void gem::calib::Calibration::sendSOAPMessageForDacScan(){
                 CMSGEMOS_INFO("GEMCalibration::applying action sending SOAP message to GLIB Manager with unordered bag");
                 gem::utils::soap::GEMSOAPToolBox::sendCommandWithParameterBag(command, bagDacScanFromMap, p_appContext, p_appDescriptor, app);
       
-            }
+                //}
                     
         }
     }
@@ -448,20 +448,20 @@ void gem::calib::Calibration::sendSOAPMessageForPrintingCalParams() {
             CMSGEMOS_DEBUG("GEMCalibration:::init::xDAQ group: " << *i
                       << " allApp class name " << (*j)->getClassName());
             
-            if ((((*j)->getClassName()).rfind("GLIBManager") != std::string::npos)) {
+            if ((((*j)->getClassName()).rfind("GLIBManager") != std::string::npos)) continue;
 
                  // if (((*j)->getClassName()).rfind("GEMApplication") != std::string::npos) {
                        
-                xdaq::ApplicationDescriptor* app=(xdaq::ApplicationDescriptor*) *j;
+            xdaq::ApplicationDescriptor* app=(xdaq::ApplicationDescriptor*) *j;
                 //std::string command = "calibrateAction";
-                std::string command = "calibParamPrint";
+            //std::string command = "calibParamPrint";
                 
                
-                gem::utils::soap::GEMSOAPToolBox::sendCommand(command,  p_appContext, p_appDescriptor, app);
-                //gem::utils::soap::GEMSOAPToolBox::sendCommandWithParameterBag(command2, bagFromMap, p_appContext, p_appDescriptor, app);
-      
-            }
-                    
+            //gem::utils::soap::GEMSOAPToolBox::sendCommand(command,  p_appContext, p_appDescriptor, app);
+            
+            
+            //}
+            
         }
     }
     

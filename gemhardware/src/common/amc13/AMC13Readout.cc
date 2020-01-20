@@ -25,12 +25,15 @@ gem::hw::amc13::AMC13Readout::AMC13Readout(xdaq::ApplicationStub* stub)
   p_appInfoSpace->fireItemAvailable("CardName",       &m_cardName);
   p_appInfoSpace->fireItemAvailable("crateID",        &m_crateID );
   p_appInfoSpace->fireItemAvailable("slot",           &m_slot    );
-
+  CMSGEMOS_DEBUG("AMC13Readout::AMC13Readout() items available "     << std::endl);
   p_appInfoSpace->addItemRetrieveListener("CardName", this);
   p_appInfoSpace->addItemRetrieveListener("crateID",  this);
   p_appInfoSpace->addItemRetrieveListener("slot",     this);
-
+ CMSGEMOS_DEBUG("AMC13Readout::AMC13Readout() items rietrived from listener "     << std::endl);
+  
   p_appInfoSpace->addItemChangedListener( "CardName", this);
+  CMSGEMOS_DEBUG("AMC13Readout::AMC13Readout() card name added to listener "     << std::endl);
+
   p_appInfoSpace->addItemChangedListener( "crateID",  this);
   p_appInfoSpace->addItemChangedListener( "slot",     this);
 
@@ -67,7 +70,7 @@ void gem::hw::amc13::AMC13Readout::actionPerformed(xdata::Event& event)
         << " m_slot:"           << m_slot.toString()           << std::endl
         );
   // update monitoring variables
-  gem::readout::GEMReadoutApplication::actionPerformed(event);
+  gem::readout::GEMReadoutApplication::actionPerformed(event); ///CG: debugging with jared
 }
 
 void gem::hw::amc13::AMC13Readout::initializeAction()
@@ -77,11 +80,12 @@ void gem::hw::amc13::AMC13Readout::initializeAction()
   //hcal has a pre-init, what is the reason to not do everything in initialize?
   std::string connection  = "${GEM_ADDRESS_TABLE_PATH}/"+m_connectionFile.toString();
   //std::string cardname    = toolbox::toString("gem.shelf%02d.amc13",m_crateID);
+  
   std::string cardName    = m_cardName.toString();
 
   try {
     //gem::utils::LockGuard<gem::utils::Lock> guardedLock(m_amc13Lock);
-    CMSGEMOS_DEBUG("Trying to create connection to " << cardName << " in " << connection);
+    CMSGEMOS_DEBUG("amc13::AMC13Readout::initializeAction Trying to create connection to " << cardName << " in " << connection);
     //p_amc13 = new ::amc13::AMC13(connection, cardName+".T1", cardName+".T2");
     p_amc13 = std::make_shared< ::amc13::AMC13>(connection, cardName+".T1", cardName+".T2");
   } catch (uhal::exception::exception & e) {

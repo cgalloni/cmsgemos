@@ -122,6 +122,13 @@ namespace gem {
           void setVFATMask(uint32_t const mask);
 
           /**
+           * @brief Sets the VFAT calibration format data control mask
+           * @param mask is the mask to apply
+           */
+          void configureOHCalDataFormat(uint32_t const mask);
+
+          
+          /**
            * @brief Returns VFATs to the 0 run mode
            *
            */

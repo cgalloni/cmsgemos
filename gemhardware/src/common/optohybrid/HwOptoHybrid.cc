@@ -192,9 +192,10 @@ std::string gem::hw::optohybrid::HwOptoHybrid::getFirmwareDateString()
 std::vector<uint32_t> gem::hw::optohybrid::HwOptoHybrid::broadcastRead(std::string const& name,
                                                                        uint32_t    const& mask,
                                                                        bool        const& reset)
-{
+{CMSGEMOS_INFO("HwOptoHybrid::broadcastRead m_link " <<  (uint32_t) m_link);//CG
+
   try {
-    req = wisc::RPCMsg("vfat3.broadcastRead");
+    req = wisc::RPCMsg("optohybrid.broadcastRead");
     req.set_string("reg_name", name);
     req.set_word("ohN",      static_cast<uint32_t>(m_link));
     req.set_word("mask",     mask);
@@ -216,7 +217,10 @@ void gem::hw::optohybrid::HwOptoHybrid::broadcastWrite(std::string const& name,
                                                        bool        const& reset)
 {
   try {
-    req = wisc::RPCMsg("vfat3.broadcastWrite");
+      req = wisc::RPCMsg("optohybrid.broadcastWrite");
+      //req = wisc::RPCMsg("vfat3.broadcastWrite");
+      CMSGEMOS_INFO("HwOptoHybrid::broadcastWrite value " << value << "for reg " <<name << " mask "<< mask);
+      
     req.set_string("reg_name", name);
     req.set_word("ohN",      static_cast<uint32_t>(m_link));
     req.set_word("mask",     mask);
@@ -231,43 +235,96 @@ void gem::hw::optohybrid::HwOptoHybrid::broadcastWrite(std::string const& name,
 
 std::vector<std::pair<uint8_t, uint32_t> > gem::hw::optohybrid::HwOptoHybrid::getConnectedVFATs(bool update)
 {
-  // FIXME UPDATE WITH NEW COMM PROTOCOL
-  if (update || b_is_initial) {
-    std::vector<uint32_t> loc_chipIDs;
-    try {
-      req = wisc::RPCMsg("vfat3.getVFAT3ChipIDs");
-      req.set_word("ohN",   static_cast<uint32_t>(m_link));
-      req.set_word("mask",  0x0); // FIXME mandatory, need to redesign ctp7_modules
-      req.set_word("rawID", false);
-      try {
-        rsp = rpc.call_method(req);
-      } STANDARD_CATCH;
-      checkRPCResponse("HwOptoHybrid::getVFAT3ChipIDs");
-      loc_chipIDs.resize(rsp.get_word_array_size("chipIDs")); // FIXME should be 24
-      rsp.get_word_array("chipIDs", loc_chipIDs.data());
-    } GEM_CATCH_RPC_ERROR("HwOptoHybrid::getVFAT3ChipIDs", gem::hw::optohybrid::exception::Exception);
+    CMSGEMOS_INFO("HwOptoHybrid::getConnectedVFATs puppa1 " );//CG
+    // FIXME UPDATE WITH NEW COMM PROTOCOL
 
-    // std::vector<uint32_t> loc_chipIDs = broadcastRead("HW_CHIP_ID", gem::hw::utils::ALL_VFATS_BCAST_MASK, false);
-
+    uint32_t ohN =  static_cast<uint32_t> (m_link);
     std::vector<std::pair<uint8_t, uint32_t> > chipIDs;
-
+    
     size_t idx = 0;
-    for (auto const& chip : loc_chipIDs) {
-      uint32_t chipID = chip;
-      CMSGEMOS_DEBUG("HwOptoHybrid::getConnectedVFATs GEB slot: " << static_cast<uint32_t>(idx)
-                     << ", chipID: 0x" << std::hex << std::setw(8) << std::setfill('0') << chipID << std::dec);
-      chipIDs.push_back(std::make_pair(idx, chipID));
-      ++idx;
+    if (update || b_is_initial) {
+        
+        try {
+            req = wisc::RPCMsg("vfat3.getVFAT3ChipIDs");
+            req.set_word("ohN",   static_cast<uint32_t>(m_link));
+            req.set_word("vfatMask",  0x0); // FIXME mandatory, need to redesign ctp7_modules
+            req.set_word("rawID", false);
+            try {
+                rsp = rpc.call_method(req);
+            } STANDARD_CATCH;
+            checkRPCResponse("HwOptoHybrid::getVFAT3ChipIDs");
+            CMSGEMOS_INFO("HwOptoHybrid::getVFAT3ChipIDs got answer to rPC message" );//CG
+           
+            for(int vfatN = 0; vfatN < 24; vfatN++) {
+                char regBase [100];
+                sprintf(regBase, "GEM_AMC.OH.OH%i.GEB.VFAT%i.HW_CHIP_ID",ohN, vfatN);
+                
+                std::string regName = std::string(regBase);
+                uint32_t chipID = rsp.get_word(regName);
+                chipIDs.push_back(std::make_pair(idx, chipID));
+                ++idx;
+            }
+            
+        } GEM_CATCH_RPC_ERROR("HwOptoHybrid::getVFAT3ChipIDs", gem::hw::optohybrid::exception::Exception);
+
+        CMSGEMOS_INFO("HwOptoHybrid::getConnectedVFATs puppa2 " );//CG
+          
+        m_chipIDs    = chipIDs;
+        b_is_initial = false;
     }
-    m_chipIDs    = chipIDs;
-    b_is_initial = false;
-  }
+   
+  
   return m_chipIDs;
 }
 
 
+
+
+
+// std::vector<std::pair<uint8_t, uint32_t> > gem::hw::optohybrid::HwOptoHybrid::getConnectedVFATs(bool update)
+// { CMSGEMOS_INFO("HwOptoHybrid::getConnectedVFATs puppa1 " );//CG
+//   // FIXME UPDATE WITH NEW COMM PROTOCOL
+//   if (update || b_is_initial) {
+//     std::vector<uint32_t> loc_chipIDs;
+//     try {
+//       req = wisc::RPCMsg("vfat3.getVFAT3ChipIDs");
+//       req.set_word("ohN",   static_cast<uint32_t>(m_link));
+//       req.set_word("vfatMask",  0x0); // FIXME mandatory, need to redesign ctp7_modules
+//       req.set_word("rawID", false);
+//       try {
+//         rsp = rpc.call_method(req);
+//       } STANDARD_CATCH;
+//       checkRPCResponse("HwOptoHybrid::getVFAT3ChipIDs");
+//       CMSGEMOS_INFO("HwOptoHybrid::getConnectedVFATs VFAT number : "<< rsp.get_word_array_size("chipIDs") );//CG
+//       loc_chipIDs.resize(rsp.get_word_array_size("chipIDs")); // FIXME should be 24
+//       rsp.get_word_array("chipIDs", loc_chipIDs.data());
+//     } GEM_CATCH_RPC_ERROR("HwOptoHybrid::getVFAT3ChipIDs", gem::hw::optohybrid::exception::Exception);
+
+//     CMSGEMOS_INFO("HwOptoHybrid::getConnectedVFATs puppa2 " );//CG
+//     CMSGEMOS_INFO("HwOptoHybrid::getConnectedVFATs VFAT number : "<< rsp.get_word_array_size("chipIDs") );//CG
+//     // std::vector<uint32_t> loc_chipIDs = broadcastRead("HW_CHIP_ID", gem::hw::utils::ALL_VFATS_BCAST_MASK, false);
+
+//     std::vector<std::pair<uint8_t, uint32_t> > chipIDs;
+
+//     size_t idx = 0;
+//     for (auto const& chip : loc_chipIDs) {
+//       uint32_t chipID = chip;
+//       CMSGEMOS_DEBUG("HwOptoHybrid::getConnectedVFATs GEB slot: " << static_cast<uint32_t>(idx)
+//                      << ", chipID: 0x" << std::hex << std::setw(8) << std::setfill('0') << chipID << std::dec);
+//       chipIDs.push_back(std::make_pair(idx, chipID));
+//       ++idx;
+//     }
+//     m_chipIDs    = chipIDs;
+//     b_is_initial = false;
+//   }
+//   return m_chipIDs;
+// }
+
+
 uint32_t gem::hw::optohybrid::HwOptoHybrid::getConnectedVFATMask(bool update)
 {
+ CMSGEMOS_INFO("HwOptoHybrid::getConnectedVFATMask beginning" ); //CG: remove
+    
   if (update || b_is_initial) {
     // change to vfatSyncCheck?
     uint32_t goodVFATs = 0x0;
@@ -283,12 +340,13 @@ uint32_t gem::hw::optohybrid::HwOptoHybrid::getConnectedVFATMask(bool update)
 
     uint32_t connectedMask = goodVFATs;      // FIXME high means broadcast, present
     uint32_t disabledMask  = ~connectedMask; // FIXME high means ignore data
+    CMSGEMOS_INFO("HwOptoHybrid::getConnectedVFATMask 1 final mask is 0x"
+                  << std::setw(8) << std::setfill('0') << std::hex << connectedMask << std::dec);//CG: remove
+    
+     connectedMask |= gem::hw::utils::ALL_VFATS_BCAST_MASK;
+     disabledMask  |= gem::hw::utils::ALL_VFATS_BCAST_MASK;
 
-    connectedMask |= gem::hw::utils::ALL_VFATS_BCAST_MASK;
-    disabledMask  |= gem::hw::utils::ALL_VFATS_BCAST_MASK;
-
-    CMSGEMOS_DEBUG("HwOptoHybrid::getConnectedVFATMask final mask is 0x"
-                   << std::setw(8) << std::setfill('0') << std::hex << connectedMask << std::dec);
+    CMSGEMOS_INFO("HwOptoHybrid::getConnectedVFATMask final mask is 0x" << std::setw(8) << std::setfill('0') << std::hex << connectedMask << std::dec);//CG: was DEBUG
 
     m_connectedMask = connectedMask;
   }
@@ -443,6 +501,16 @@ void gem::hw::optohybrid::HwOptoHybrid::setVFATMask(uint32_t const mask)
   regName << "GEM_AMC.OH_LINKS.OH" << static_cast<int>(m_link) << ".VFAT_MASK";
   return writeReg(regName.str(), mask&0x00ffffff);
 }
+void gem::hw::optohybrid::HwOptoHybrid::configureOHCalDataFormat(uint32_t const mask)
+{
+ 
+  CMSGEMOS_DEBUG("HwOptoHybrid::configOHCalDataFormat mask"
+                 << std::hex << std::setw(8) << std::setfill('0') << mask << std::dec);
+  std::stringstream regName;
+  regName << "GEM_AMC.DAQ.CONTROL.CALIBRATION_MODE_CHAN" ;
+  return writeReg(regName.str(), mask&0x00ffffff);
+}
+
 
 void gem::hw::optohybrid::HwOptoHybrid::resetVFATs()
 {
@@ -488,7 +556,8 @@ uint32_t gem::hw::optohybrid::HwOptoHybrid::getHDMISBitMode(uint8_t const& bit)
 
 uint32_t gem::hw::optohybrid::HwOptoHybrid::getClockStatus()
 {
-  return readReg(getDeviceBaseNode(),"FPGA.CLOCKING");
+    //return readReg(getDeviceBaseNode(),"FPGA.CLOCKING"); //CG commenting out for debugging purpose. Not compatible with fw 3.2.8c MMCM_LOCKEDand MMCM_UNLOCK_CNT
+    return 1;
 }
 
 //////// Firmware Status \\\\\\\\*

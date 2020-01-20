@@ -1328,7 +1328,7 @@ xoap::MessageReference gem::supervisor::GEMSupervisor::EndScanPoint(xoap::Messag
                 << " m_scanMax.value_ = " << m_scanMax.value_ << std::endl
                 << " m_scanInfo.bag.scanMax.value_ = " << m_scanInfo.bag.scanMax.value_ << std::endl
                 );
-  if (updatedParameter <= m_scanMax.value_) {
+  if (updatedParameter <= m_scanInfo.bag.scanMax.value_) {
     if (m_scanType.value_ == 2) {
       CMSGEMOS_INFO("GEMSupervisor::EndScanPoint LatencyScan Latency " << updatedParameter);
     } else if (m_scanType.value_ == 3) {
@@ -1373,7 +1373,7 @@ xoap::MessageReference gem::supervisor::GEMSupervisor::EndScanPoint(xoap::Messag
                   << " calling stopAction");
 
     fireEvent("Stop");
-    usleep(100);
+    usleep(10000);// CG era 100
   }
 
   try {

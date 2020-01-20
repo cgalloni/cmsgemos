@@ -270,7 +270,9 @@ void gem::hw::amc13::AMC13Manager::updateStatus(xgi::Input *in, xgi::Output *out
 void gem::hw::amc13::AMC13Manager::initializeAction()
 {
   // hcal has a pre-init, what is the reason to not do everything in initialize?
-  std::string connection  = "${GEM_ADDRESS_TABLE_PATH}/"+m_connectionFile;
+   
+    std::string connection  = "${GEM_ADDRESS_TABLE_PATH}/"+m_connectionFile;
+    CMSGEMOS_INFO("AMC13Manager::initializeAction  ${GEM_ADDRESS_TABLE_PATH} is "<<  connection );// CG : rimuovere
   // std::string cardname    = toolbox::toString("gem.shelf%02d.amc13",m_crateID);
   std::string cardname    = m_cardName;
 
@@ -609,12 +611,12 @@ void gem::hw::amc13::AMC13Manager::resumeAction()
 
 void gem::hw::amc13::AMC13Manager::stopAction()
 {
-  CMSGEMOS_DEBUG("AMC13Manager::Entering AMC13Manager::stopAction()");
+    CMSGEMOS_INFO("AMC13Manager::Entering AMC13Manager::stopAction()");// CG was DEBUG
   // gem::base::GEMFSMApplication::disable();
   gem::utils::LockGuard<gem::utils::Lock> guardedLock(m_amc13Lock);
 
   if (m_scanType.value_ == 2 || m_scanType.value_ == 3) {
-    CMSGEMOS_DEBUG("AMC13Manager::stopAction Sending continuous triggers for ScanRoutines ");
+      CMSGEMOS_INFO("AMC13Manager::stopAction Sending continuous triggers for ScanRoutines ");//CG was DEBUG
     p_timer->stop();
   }
 
@@ -821,14 +823,14 @@ xoap::MessageReference gem::hw::amc13::AMC13Manager::disableTriggers(xoap::Messa
 
 void gem::hw::amc13::AMC13Manager::timeExpired(toolbox::task::TimerEvent& event)
 {
-    //m_updatedL1ACount = p_amc13->read(::amc13::AMC13::T1,"STATUS.GENERAL.L1A_COUNT_LO"); //CG
+    
   uint64_t currentTrigger = p_amc13->read(::amc13::AMC13::T1,"STATUS.GENERAL.L1A_COUNT_LO") - m_updatedL1ACount;
-  //m_nScanTriggers.value_=50; //CG TODO Remove
+  
 
-  // CMSGEMOS_DEBUG("AMC13Manager::timeExpried, NTriggerRequested = " << m_nScanTriggers.value_m)
-  //        << " currentT = " << currentTrigger << " triggercounter final =  " << m_updatedL1ACount );
-  CMSGEMOS_INFO("AMC13Manager::timeExpried, NTriggerRequested = " << m_nScanTriggers.value_
-                << " currentT = " << currentTrigger << " triggercounter final =  " << m_updatedL1ACount );//CG prima era debug level 
+  CMSGEMOS_DEBUG("AMC13Manager::timeExpried, NTriggerRequested = " << m_scanInfo.bag.nTriggers.value_
+      << " currentT = " << currentTrigger << " triggercounter final =  " << m_updatedL1ACount );
+// CMSGEMOS_INFO("AMC13Manager::timeExpried, NTriggerRequested = " << m_nScanInfoTriggers.value_
+//               << " currentT = " << currentTrigger << " triggercounter final =  " << m_updatedL1ACount );//CG prima era debug level 
 
   if (currentTrigger >=  m_nScanTriggers.value_){
     if (m_enableLocalL1A) {

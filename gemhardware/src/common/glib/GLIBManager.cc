@@ -317,6 +317,9 @@ void gem::hw::glib::GLIBManager::initializeAction()
 void gem::hw::glib::GLIBManager::configureAction()
   throw (gem::hw::glib::exception::Exception)
 {
+
+    
+    
   CMSGEMOS_DEBUG("GLIBManager::configureAction");
   CMSGEMOS_INFO("GLIBManager::configureAction m_scanInfo.bag.scanType.value_ " << m_scanInfo.bag.scanType.value_ ); ///CG
   // FIXME make me more streamlined
@@ -362,7 +365,8 @@ void gem::hw::glib::GLIBManager::configureAction()
       //   // amc->setZS(info.enableZS.value_);
       //   // amc->setDAQLinkRunType(0x0);
       //   // amc->setDAQLinkRunParameters(0xfaac);
-      // } GEM_CATCH_RPC_ERROR("GLIBManager::configureAction", gem::hw::glib::exception::ConfigurationProblem);
+          // } GEM_CATCH_RPC_ERROR("GLIBManager::configureAction", gem::hw::glib::exception::ConfigurationProblem);
+         
       // catch (xhal::utils::XHALRPCNotConnectedException const& e) {
       //   std::stringstream errmsg;
       //   errmsg << "GLIBManager::configureAction unable to configure: " << e.what();
@@ -375,7 +379,7 @@ void gem::hw::glib::GLIBManager::configureAction()
       //   XCEPT_RAISE(gem::hw::glib::exception::ConfigurationProblem, errmsg.str());
       // } catch (gem::hw::exception::RPCMethodError const& e) {
       //   std::stringstream errmsg;
-      //   errmsg << "GLIBManager::configureAction unable to configure: " << e.what();
+      //   err_msg << "GLIBManager::configureAction unable to configure: " << e.what();
       //   // fireEvent("Fail");
       //   XCEPT_RAISE(gem::hw::glib::exception::ConfigurationProblem, errmsg.str());
       // }
@@ -383,7 +387,23 @@ void gem::hw::glib::GLIBManager::configureAction()
           CMSGEMOS_INFO("GLIBManager::configureAction: FIRST  " << m_scanMin.value_);
           
           amc->setDAQLinkRunType(0x2);
-          amc->setDAQLinkRunParameter(0x1,m_scanInfo.bag.scanMin.value_); ///CG
+          //amc->setDAQLinkRunParameter(0x1,m_scanInfo.bag.scanMin.value_); ///CG is the latency the 1st parameter to be written? shall it be done like this? I don't see DAQ.EXT_CONTROL.RUN_PARAM1 among the registers
+
+          CMSGEMOS_INFO("GLIBManager::configureAction::  m_scanInfo.bag.calMode.value_ " << m_scanInfo.bag.calMode.value_);///CG remove 
+          //If calibration format mode invoked for data
+          if(  m_scanInfo.bag.calMode.value_ ==
+               true
+               ){
+              CMSGEMOS_INFO("GLIBManager::configureAction:: setting data format calibrationMode ");
+              uint8_t chan = 0x1;//CG: setting just channel7 atm
+              ////USING CHANNEL 7 but without the caibration data format
+              amc->configureAMCCalDataFormat(chan,false);
+              CMSGEMOS_INFO("GLIBManager::configureAction:: setting data format calibrationMode amc->readReg(GEM_AMC.DAQ.CONTROL.CALIBRATION_MODE_CHAN) "<< amc->readReg("GEM_AMC.DAQ.CONTROL.CALIBRATION_MODE_CHAN") << "amc->readReg(GEM_AMC.DAQ.CONTROL.CALIBRATION_MODE_EN) "<< amc->readReg("GEM_AMC.DAQ.CONTROL.CALIBRATION_MODE_EN")  );
+              // GC: trying to reproduce Brian's macro
+              amc->writeReg(amc->getDeviceBaseNode(), "TTC.GENERATOR.ENABLE",0x0);//0x0);//CG probabilmente deve essere 0 ma orami si proano tutte
+              amc->writeReg(amc->getDeviceBaseNode(), "TTC.CTRL.CALIBRATION_MODE",0x0); // 0x1);
+              //amc->writeReg(amc->getDeviceBaseNode(), "TTC.CTRL.CALPULSE_L1A_DELAY", 0x30);
+          }
           CMSGEMOS_INFO("GLIBManager::configureAction:: exiting latency");
           
           // amc->setDAQLinkRunParameter(0x2,VT1);  // set these at start so DQM has them?
@@ -431,7 +451,7 @@ void gem::hw::glib::GLIBManager::startAction()
     m_lastVT1 = 0;
   } else if (m_scanInfo.bag.scanType.value_ == 3) {
     CMSGEMOS_INFO("GLIBManager::startAction() " << std::endl << m_scanInfo.bag.toString());
-    m_lastLatency = 0;
+    m_lastLatency = 0; /// CG shouldn't it be m_scanInfo.bag.latency.value_;
     m_lastVT1 = m_scanInfo.bag.scanMin.value_;
   }
 
@@ -483,78 +503,88 @@ void gem::hw::glib::GLIBManager::startAction()
 }
 
 void gem::hw::glib::GLIBManager::pauseAction()
-  throw (gem::hw::glib::exception::Exception)
+    throw (gem::hw::glib::exception::Exception)
 {
-  // what is required for pausing the GLIB?
-  // FIXME make me more streamlined
-  for (unsigned slot = 0; slot < MAX_AMCS_PER_CRATE; ++slot) {
-    // usleep(10);
-    CMSGEMOS_DEBUG("GLIBManager::looping over slots(" << (slot+1) << ") and finding infospace items");
-    GLIBInfo& info = m_glibInfo[slot].bag;
+    // what is required for pausing the GLIB?
+    // FIXME make me more streamlined
+    for (unsigned slot = 0; slot < MAX_AMCS_PER_CRATE; ++slot) {
+        // usleep(10);
+        CMSGEMOS_DEBUG("GLIBManager::looping over slots(" << (slot+1) << ") and finding infospace items");
+        GLIBInfo& info = m_glibInfo[slot].bag;
 
-    if (!info.present)
-      continue;
+        if (!info.present)
+            continue;
 
-    glib_shared_ptr amc = m_glibs.at(slot);
-    if (amc->isHwConnected()) {
-      if (m_glibMonitors.at(slot))
-        m_glibMonitors.at(slot)->pauseMonitoring();
+        glib_shared_ptr amc = m_glibs.at(slot);
+        if (amc->isHwConnected()) {
+            if (m_glibMonitors.at(slot))
+                m_glibMonitors.at(slot)->pauseMonitoring();
 
-      CMSGEMOS_DEBUG("connected a card in slot " << (slot+1));
+            CMSGEMOS_DEBUG("connected a card in slot " << (slot+1));
 
-      if (m_scanType.value_ == 2) {
-	uint8_t updatedLatency = m_lastLatency + m_scanInfo.bag.stepSize.value_;
-        CMSGEMOS_INFO("GLIBManager::pauseAction LatencyScan AMC" << (slot+1) << " Latency " << (int)updatedLatency);
-        CMSGEMOS_INFO("GLIBManager::pauseAction  amc->l1aFIFOIsEmpty() is " <<  amc->l1aFIFOIsEmpty()  ); //CG
-        // wait for events to finish building
-        while (!amc->l1aFIFOIsEmpty()) {
-          CMSGEMOS_DEBUG("GLIBManager::pauseAction waiting for AMC" << (slot+1) << " to finish building events");
-          usleep(10); 
+            if (m_scanType.value_ == 2) {
+
+
+                CMSGEMOS_INFO("GLIBManager::pauseAction:: setting data format calibrationMode amc->readReg(GEM_AMC.DAQ.CONTROL.CALIBRATION_MODE_CHAN) "<< amc->readReg("GEM_AMC.DAQ.CONTROL.CALIBRATION_MODE_CHAN") << "amc->readReg(GEM_AMC.DAQ.CONTROL.CALIBRATION_MODE_EN) "<< amc->readReg("GEM_AMC.DAQ.CONTROL.CALIBRATION_MODE_EN")  );
+                CMSGEMOS_INFO("GLIBManager::pauseAction LatencyScan m_lastLatency " << m_lastLatency << " m_scanInfo.bag.stepSize.value_ "<< m_scanInfo.bag.stepSize.value_ );
+                uint32_t updatedLatency = m_lastLatency + m_scanInfo.bag.stepSize.value_;
+                CMSGEMOS_INFO("GLIBManager::pauseAction LatencyScan AMC" << (slot+1) << " Latency " << (int)updatedLatency);
+                CMSGEMOS_INFO("GLIBManager::pauseAction  amc->l1aFIFOIsEmpty() is " <<  amc->l1aFIFOIsEmpty()  ); //CG
+                // wait for events to finish building
+                while (!amc->l1aFIFOIsEmpty()) {
+                    CMSGEMOS_DEBUG("GLIBManager::pauseAction waiting for AMC" << (slot+1) << " to finish building events");
+                    usleep(10); 
+                }
+                CMSGEMOS_INFO("GLIBManager::pauseAction AMC" << (slot+1) << " finished building events, updating run parameter "
+                              << (int)updatedLatency); //DEBUG
+                //amc->setDAQLinkRunParameter(0x1,updatedLatency); //CG: ask Jared
+                // if runType == 0x2:
+               
+                uint32_t runParams = ( (0x1 << 22) | (0x0 << 21) | (0x6 << 13) | ((m_scanInfo.bag.mspl.value_ & 0x7) << 10) | (updatedLatency) );
+                CMSGEMOS_INFO("GLIBManager::pauseAction AMC runParams :" << runParams );  //CG: TO be removed
+                amc->setDAQLinkRunParameters(runParams);
+                
+            } else if (m_scanType.value_ == 3) {
+                uint8_t updatedVT1 = m_lastVT1 + m_scanInfo.bag.stepSize.value_;
+                uint8_t updatedVT2 = 0; //std::max(0,(int)m_scanMax.value_);
+                CMSGEMOS_INFO("GLIBManager::pauseAction ThresholdScan AMC" << (slot+1) << ""
+                              << " VT1 " << (int)updatedVT1
+                              << " VT2 " << (int)updatedVT2);
+
+                // wait for events to finish building
+                while (!amc->l1aFIFOIsEmpty()) {
+                    CMSGEMOS_DEBUG("GLIBManager::pauseAction waiting for AMC" << (slot+1) << " to finish building events");
+                    usleep(10);
+                }
+                CMSGEMOS_DEBUG("GLIBManager::pauseAction finished AMC" << (slot+1) << " building events, updating VT1 " << (int)updatedVT1
+                               << " and VT2 " << (int)updatedVT2);
+                amc->setDAQLinkRunParameter(0x2,updatedVT1);
+                amc->setDAQLinkRunParameter(0x3,updatedVT2);
+            }
+            // usleep(100); // just for testing the timing of different applications
+
+            if (m_glibMonitors.at(slot))
+                m_glibMonitors.at(slot)->resumeMonitoring();
+        } else {
+            std::stringstream msg;
+            msg << "GLIBManager::pauseAction GLIB in slot " << (slot+1) << " is not connected";
+            CMSGEMOS_ERROR(msg.str());
+            // fireEvent("Fail");
+            XCEPT_RAISE(gem::hw::glib::exception::Exception, msg.str());
         }
-        CMSGEMOS_INFO("GLIBManager::pauseAction AMC" << (slot+1) << " finished building events, updating run parameter "
-                      << (int)updatedLatency); //DEBUG
-        amc->setDAQLinkRunParameter(0x1,updatedLatency);
-      } else if (m_scanType.value_ == 3) {
-        uint8_t updatedVT1 = m_lastVT1 + m_stepSize.value_;
-        uint8_t updatedVT2 = 0; //std::max(0,(int)m_scanMax.value_);
-        CMSGEMOS_INFO("GLIBManager::pauseAction ThresholdScan AMC" << (slot+1) << ""
-                      << " VT1 " << (int)updatedVT1
-                      << " VT2 " << (int)updatedVT2);
-
-        // wait for events to finish building
-        while (!amc->l1aFIFOIsEmpty()) {
-          CMSGEMOS_DEBUG("GLIBManager::pauseAction waiting for AMC" << (slot+1) << " to finish building events");
-          usleep(10);
-        }
-        CMSGEMOS_DEBUG("GLIBManager::pauseAction finished AMC" << (slot+1) << " building events, updating VT1 " << (int)updatedVT1
-                       << " and VT2 " << (int)updatedVT2);
-	amc->setDAQLinkRunParameter(0x2,updatedVT1);
-	amc->setDAQLinkRunParameter(0x3,updatedVT2);
-      }
-      // usleep(100); // just for testing the timing of different applications
-
-      if (m_glibMonitors.at(slot))
-        m_glibMonitors.at(slot)->resumeMonitoring();
-    } else {
-      std::stringstream msg;
-      msg << "GLIBManager::pauseAction GLIB in slot " << (slot+1) << " is not connected";
-      CMSGEMOS_ERROR(msg.str());
-      // fireEvent("Fail");
-      XCEPT_RAISE(gem::hw::glib::exception::Exception, msg.str());
     }
-  }
 
-  // Update the scan parameters
-  if (m_scanType.value_ == 2) {
-    CMSGEMOS_INFO("GLIBManager::pauseAction LatencyScan old Latency " << (int)m_lastLatency);
-    m_lastLatency += m_stepSize.value_;
-    CMSGEMOS_INFO("GLIBManager::pauseAction LatencyScan new Latency " << (int)m_lastLatency);
-  } else if (m_scanType.value_ == 3) {
-    CMSGEMOS_INFO("GLIBManager::pauseAction ThresholdScan old VT1 " << (int)m_lastVT1);
-    m_lastVT1 += m_stepSize.value_;
-    CMSGEMOS_INFO("GLIBManager::pauseAction ThresholdScan new VT1 " << (int)m_lastVT1);
-  }
-  CMSGEMOS_INFO("GLIBManager::pauseAction end");
+    // Update the scan parameters
+    if (m_scanType.value_ == 2) {
+        CMSGEMOS_INFO("GLIBManager::pauseAction LatencyScan old Latency " << (int)m_lastLatency);
+        m_lastLatency += m_scanInfo.bag.stepSize.value_;
+        CMSGEMOS_INFO("GLIBManager::pauseAction LatencyScan new Latency " << (int)m_lastLatency);
+    } else if (m_scanType.value_ == 3) {
+        CMSGEMOS_INFO("GLIBManager::pauseAction ThresholdScan old VT1 " << (int)m_lastVT1);
+        m_lastVT1 += m_scanInfo.bag.stepSize.value_;
+        CMSGEMOS_INFO("GLIBManager::pauseAction ThresholdScan new VT1 " << (int)m_lastVT1);
+    }
+    CMSGEMOS_INFO("GLIBManager::pauseAction end");
 }
 
 void gem::hw::glib::GLIBManager::resumeAction()

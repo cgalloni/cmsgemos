@@ -312,7 +312,13 @@ namespace gem {
          * @brief Disable zero suppression of VFAT data
          */
         void disableZS() { setZS(false); };
+        
+        /**
+         * @brief set calibration data format of VFAT data
+         */
+        void configureAMCCalDataFormat(uint8_t chan, bool en);
 
+        
         /**
          * @brief reset the DAQ link and write the DAV timout
          *        - assert RESET and then release
@@ -495,6 +501,8 @@ namespace gem {
         void setDAQLinkRunParameter(uint8_t const& parameter, uint8_t const& value);
 
 
+
+        
         /**************************/
         /** TTC module information **/
         /**************************/

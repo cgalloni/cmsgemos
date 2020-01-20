@@ -173,13 +173,14 @@ void gem::hw::optohybrid::OptoHybridManager::initializeAction()
       // if (!info.present.value_) continue;
       // p_gemWebInterface->optohybridInSlot(slot);
 
-      CMSGEMOS_DEBUG("OptoHybridManager::initializeAction grabbing pointer to hardware device");
+      CMSGEMOS_INFO("OptoHybridManager::initializeAction grabbing pointer to hardware device"); ///CG: was DEBUG
       auto&& optohybrid = m_optohybrids.at(slot).at(link);
 
       if (optohybrid->isHwConnected()) {
         m_vfatMapping.at(slot).at(link)   = optohybrid->getConnectedVFATs(true);
 
         m_broadcastList.at(slot).at(link) = ~(optohybrid->getConnectedVFATMask(true));
+        
         m_trackingMask.at(slot).at(link)  = m_broadcastList.at(slot).at(link);
         m_sbitMask.at(slot).at(link)      = m_broadcastList.at(slot).at(link);
 
@@ -211,6 +212,8 @@ void gem::hw::optohybrid::OptoHybridManager::initializeAction()
                       << std::dec << std::endl);
 
         // FIXME may not want to actually force this
+       CMSGEMOS_INFO("setting Vfat mast to m_trackingMask that  is 0x"
+                     << std::setw(8) << std::setfill('0') << std::hex << m_trackingMask.at(slot).at(link) << std::dec); //CG: remove
         optohybrid->setVFATMask(m_trackingMask.at(slot).at(link));
 
         // FIXME may not want to actually force this
@@ -293,12 +296,20 @@ void gem::hw::optohybrid::OptoHybridManager::configureAction()
         }
 
         uint32_t vfatMask = m_broadcastList.at(slot).at(link);
-        CMSGEMOS_INFO("Setting VFAT parameters with broadcast write using mask " << std::hex << vfatMask << std::dec);
-
+        CMSGEMOS_INFO("Setting VFAT parameters with broadcast write using mask  is 0x" << std::hex << vfatMask << std::dec << " for slot and link " << slot << " " << link);
+        
         // FIXME OBSOLETE/UPDATE?
         std::map<std::string, uint16_t> vfatSettings;
-
+        //optohybrid->configureVFATs(); /// CG placed here the default configuration and then set the specific registers
         if (m_scanType.value_ == 2) { // FIXME OBSOLETE
+            //setting first the calibration data format for data if enabled
+
+            if(  m_scanInfo.bag.calMode.value_ ==  true){
+                CMSGEMOS_INFO("GLIBManager::configureAction:: setting data format calibrationMode");
+                optohybrid->configureOHCalDataFormat(vfatMask);
+                CMSGEMOS_INFO("GLIBManager::configureAction:: sett data format calibrationMode for vfat mask " << vfatMask);
+            }
+            
           CMSGEMOS_INFO("OptoHybridManager::configureAction configureAction: FIRST Latency  " << m_scanInfo.bag.scanMin.value_);
          vfatSettings["Latency"    ] = static_cast<uint16_t>(m_scanInfo.bag.scanMin.value_);
           
@@ -313,14 +324,34 @@ void gem::hw::optohybrid::OptoHybridManager::configureAction()
           // optohybrid->setVFATLatencyAll( vfatMasks, m_scanInfo.bag.scanMin.value_);
           // broadcastWrite(std::string const& name,uint32_t    const& value,uint32_t    const& mask, bool        const& reset)
           //CG: maybe like so?
-          optohybrid->broadcastWrite("CFG_LATENCY", m_scanInfo.bag.scanMin.value_,vfatMask, false);  
-          optohybrid->broadcastWrite("CFG_PULSE_STRETCH", m_scanInfo.bag.mspl.value_,vfatMask, false);
-          if(  m_scanInfo.bag.signalSourceType.value_<1) {//Cal pulse
-              optohybrid->broadcastWrite("CFG_CAL_PHI", m_scanInfo.bag.pulseDelay.value_,vfatMask, false);
-              int caldac = 250;
-              optohybrid->broadcastWrite("CFG_CAL_DAC", caldac, vfatMask, false);
-          }
+
          
+          optohybrid->broadcastWrite("CFG_LATENCY", m_scanInfo.bag.scanMin.value_,vfatMask, false);
+          optohybrid->broadcastWrite("CFG_PULSE_STRETCH", m_scanInfo.bag.mspl.value_,vfatMask, false);
+    
+          if(  m_scanInfo.bag.signalSourceType.value_<1) {//Cal pulse
+              optohybrid->broadcastWrite("CFG_CAL_PHI", m_scanInfo.bag.pulseDelay.value_,vfatMask, false); 
+              optohybrid->broadcastWrite("CFG_CAL_MODE", 0x1 ,vfatMask, false);
+              ///for latency scans use the Voltage pulse(CAL_MODE 0x1), low CFG_CAL_DAC is a high injected charge amount  
+              int caldac = 250;
+              optohybrid->broadcastWrite("CFG_CAL_DAC", 256 - caldac, vfatMask, false);
+
+              CMSGEMOS_INFO("OptoHybridManager::configureAction:  specifics for latency on OH0VFAT23 CFG_CAL_PHI " << m_scanInfo.bag.pulseDelay.value_ <<" reg " << optohybrid->readReg("GEM_AMC.OH.OH0.GEB.VFAT23.CFG_CAL_PHI") << ";MPSL " <<  m_scanInfo.bag.mspl.value_ << " reg " << optohybrid->readReg("GEM_AMC.OH.OH0.GEB.VFAT23.CFG_PULSE_STRETCH") << " CAL_DAC " <<  (uint32_t) optohybrid->readReg("GEM_AMC.OH.OH0.GEB.VFAT23.CFG_CAL_DAC")); 
+          }
+
+          /// CG: da giovanni 
+          optohybrid->broadcastWrite("CFG_RES_PRE", 0x2, vfatMask, false);
+          optohybrid->broadcastWrite("CFG_CAP_PRE", 0x1, vfatMask, false);
+          optohybrid->broadcastWrite("CFG_PT", 0xf, vfatMask, false);
+          optohybrid->broadcastWrite("CFG_FP_FE", 0x7, vfatMask, false);
+
+          ///enabling calpulse for channels on vfat mask
+          for (int ch=0; ch< 128 ; ++ch){
+              char reg [100] ;
+              sprintf(reg, "VFAT_CHANNELS.CHANNEL%i.CALPULSE_ENABLE", ch);
+              optohybrid->broadcastWrite(reg, 1, vfatMask, false);
+          }
+            CMSGEMOS_INFO("OptoHybridManager::configureAction: ending  specifics for latency ");   
           
         } else if (m_scanType.value_ == 3) {//S-curve
             // FIXME OBSOLETE
@@ -328,9 +359,17 @@ void gem::hw::optohybrid::OptoHybridManager::configureAction()
             optohybrid->broadcastWrite("CFG_LATENCY", m_scanInfo.bag.latency.value_, vfatMask, false);  
             optohybrid->broadcastWrite("CFG_PULSE_STRETCH", m_scanInfo.bag.mspl.value_, vfatMask, false);
             optohybrid->broadcastWrite("CFG_CAL_PHI", m_scanInfo.bag.pulseDelay.value_, vfatMask, false);
+            ///for Scurve scans use Current pulse, high CFG_CAL_DAC is a high injected charge amount
             int caldac = 250;
             optohybrid->broadcastWrite("CFG_CAL_DAC", caldac, vfatMask, false);
-        
+
+           
+
+
+
+                
+               
+            
             uint32_t initialVT1 =  m_scanInfo.bag.scanMin.value_; //m_scanMin.value_;
             // FIXME uint32_t VT1 = (m_scanMax.value_ - m_scanMin.value_);
             uint32_t initialVT2 = 0; //std::max(0,(uint32_t)m_scanMax.value_);
@@ -351,10 +390,15 @@ void gem::hw::optohybrid::OptoHybridManager::configureAction()
             
         } else {
           // FIXME optohybrid->setVFATsToDefaults(vfatSettings, vfatMask);
+
+            //optohybrid->configureVFATs();  //CG placed 
         }
+      
 
         CMSGEMOS_INFO("Reading back values after setting defaults:");
-        optohybrid->configureVFATs();
+        //optohybrid->configureVFATs(); //CG:moved from here 
+
+        
         // auto vfatcfg = optohybrid->readVFATsConfiguration();
         // for (auto const& cfg : vfatcfg) {
         //   for (auto const& r : cfg) {
@@ -367,6 +411,8 @@ void gem::hw::optohybrid::OptoHybridManager::configureAction()
         // reset counters?
 
         // FIXME, should not be here or done like this
+         CMSGEMOS_INFO("OptoHybridManager::configureAction: about to  ReadRef and set GEM_AMC.DAQ.CONTROL.INPUT_ENABLE_MASK ");
+         
         uint32_t gtxMask = optohybrid->readReg("GEM_AMC.DAQ.CONTROL.INPUT_ENABLE_MASK");
         std::stringstream msg;
         msg << "OptoHybridManager::configureAction::OptoHybrid connected on link " << static_cast<uint32_t>(link)
@@ -378,6 +424,7 @@ void gem::hw::optohybrid::OptoHybridManager::configureAction()
         optohybrid->writeReg("GEM_AMC.DAQ.CONTROL.INPUT_ENABLE_MASK", inputMask);
         msg << " to " << std::hex << inputMask  << std::dec << std::endl;
         CMSGEMOS_INFO(msg.str());
+        
       } else {
         std::stringstream errmsg;
         errmsg << "OptoHybridManager::configureAction::OptoHybrid connected on link " << static_cast<uint32_t>(link)
@@ -399,6 +446,7 @@ void gem::hw::optohybrid::OptoHybridManager::configureAction()
 void gem::hw::optohybrid::OptoHybridManager::startAction()
   throw (gem::hw::optohybrid::exception::Exception)
 {
+    CMSGEMOS_INFO("OptoHybridManager::startAction 1.a  m_lastLatency : "<<  m_lastLatency <<" and  m_scanInfo.bag.scanMin.value_ " << m_scanInfo.bag.scanMin.value_);
   if (m_scanInfo.bag.scanType.value_ == 2) {
     m_lastLatency = m_scanInfo.bag.scanMin.value_;
     m_lastVT1 = 0;
@@ -407,7 +455,7 @@ void gem::hw::optohybrid::OptoHybridManager::startAction()
     m_lastVT1 = m_scanInfo.bag.scanMin.value_;
   }
 
-  CMSGEMOS_DEBUG("OptoHybridManager::startAction");
+  CMSGEMOS_INFO("OptoHybridManager::startAction 1.b  m_lastLatency : "<<  m_lastLatency <<" and  m_scanInfo.bag.scanMin.value_ " << m_scanInfo.bag.scanMin.value_); //cg: was debug
   // will the manager operate for all connected optohybrids, or only those connected to certain AMCs?
   // FIXME make me more streamlined
   for (size_t slot = 0; slot < MAX_AMCS_PER_CRATE; ++slot) {
@@ -440,7 +488,7 @@ void gem::hw::optohybrid::OptoHybridManager::startAction()
         std::vector<uint32_t> res = optohybrid->broadcastRead("CFG_RUN", vfatMask);
         for (auto const& r : res)
           CMSGEMOS_INFO(" 0x" << std::hex << std::setw(8) << std::setfill('0') << r << std::dec);
-
+        ///settinf RunMode for Vfats
         optohybrid->broadcastWrite("CFG_RUN", 0x1, vfatMask);
         res.clear();
         res = optohybrid->broadcastRead("CFG_RUN", vfatMask);
@@ -505,11 +553,12 @@ void gem::hw::optohybrid::OptoHybridManager::pauseAction()
         // turn on all VFATs? or should they always be on?
         uint32_t vfatMask = m_broadcastList.at(slot).at(link);
 	if (m_scanInfo.bag.scanType.value_ == 2) { // FIXME OBSOLETE
-	  uint8_t updatedLatency = m_lastLatency + m_stepSize.value_;
+	  uint32_t updatedLatency = m_lastLatency + m_stepSize.value_;
 	  CMSGEMOS_INFO("OptoHybridManager::LatencyScan OptoHybrid on link " << static_cast<uint32_t>(link)
                         << " AMC slot " << (slot+1) << " Latency  " << static_cast<uint32_t>(updatedLatency));
 
-          optohybrid->broadcastWrite("Latency", updatedLatency, vfatMask);
+      // optohybrid->broadcastWrite("Latency", updatedLatency, vfatMask);
+        optohybrid->broadcastWrite("CFG_LATENCY", updatedLatency, vfatMask);
         } else if (m_scanInfo.bag.scanType.value_ == 3) { // FIXME OBSOLETE
 	  uint8_t updatedVT1 = m_lastVT1 + m_scanInfo.bag.stepSize.value_;
 	  uint8_t VT2 = 0;  // std::max(0,static_cast<uint32_t>(m_scanMax.value_));

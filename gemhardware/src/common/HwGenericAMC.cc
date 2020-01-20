@@ -413,6 +413,12 @@ void gem::hw::HwGenericAMC::setZS(bool en)
   writeReg(getDeviceBaseNode(), "DAQ.CONTROL.ZERO_SUPPRESSION_EN", uint32_t(en));
 }
 
+void gem::hw::HwGenericAMC::configureAMCCalDataFormat(uint8_t chan, bool en)
+{   writeReg(getDeviceBaseNode(), "DAQ.CONTROL.CALIBRATION_MODE_CHAN", uint32_t(chan)); //this should be in the OH manager?
+    writeReg(getDeviceBaseNode(), "DAQ.CONTROL.CALIBRATION_MODE_EN", uint32_t(en));
+   
+}
+
 void gem::hw::HwGenericAMC::resetDAQLink(uint32_t const& davTO, uint32_t const& ttsOverride)
 {
   try {
@@ -603,6 +609,7 @@ void gem::hw::HwGenericAMC::setDAQLinkRunType(uint32_t const& value)
 
 void gem::hw::HwGenericAMC::setDAQLinkRunParameters(uint32_t const& value)
 {
+    CMSGEMOS_INFO("HwGenericAMC::setDAQLinkRunParameters attempting to write "  << getDeviceBaseNode() <<" DAQ.EXT_CONTROL.RUN_PARAMS with value " << value ); //CG da togliere
   return writeReg(getDeviceBaseNode(), "DAQ.EXT_CONTROL.RUN_PARAMS",value);
 }
 
@@ -615,7 +622,8 @@ void gem::hw::HwGenericAMC::setDAQLinkRunParameter(uint8_t const& parameter, uin
     return;
   }
   std::stringstream regBase;
-  regBase << "DAQ.EXT_CONTROL.RUN_PARAM" << (int) parameter;
+  regBase << "DAQ.EXT_CONTROL.RUN_PARAM" << (int) parameter; //FISHYYYY
+  CMSGEMOS_INFO("HwGenericAMC::setDAQLinkRunParameter ttempting to write "  << regBase.str() <<" with value " << value ); //CG da togliere
   writeReg(getDeviceBaseNode(),regBase.str(),value);
 }
 

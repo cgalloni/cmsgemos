@@ -3,7 +3,7 @@
 	      xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
 	      xmlns:xc="http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30">
 
-  <xc:Context url="http://gem904daq04:20500">
+  <xc:Context url="http://gem904daq04:20501">
     <xc:Application class="gem::hw::glib::GLIBManager" id="30" instance="0" network="local">
       <properties xmlns="urn:xdaq-application:gem::hw::glib::GLIBManager"
 		  xsi:type="soapenc:Struct">
@@ -16,6 +16,7 @@
             <slot     xsi:type="xsd:integer">2</slot>
             <present  xsi:type="xsd:boolean">true</present>
             <sbitSource    xsi:type="xsd:integer">5</sbitSource>
+            <enableZS  xsi:type="xsd:boolean">false</enableZS>
           </GLIBInfo>
 	</AllGLIBsInfo>
       </properties>
@@ -28,7 +29,7 @@
         	  xsi:type="soapenc:Struct">
         <amc13ConfigParams xsi:type="soapenc:Struct">
           <ConnectionFile     xsi:type="xsd:string">connections.xml</ConnectionFile>
-	  <CardName           xsi:type="xsd:string">gem.shelf01.amc13</CardName>
+	      <CardName           xsi:type="xsd:string">gem.shelf01.amc13</CardName>
           <!--<AMCInputEnableList xsi:type="xsd:string">2</AMCInputEnableList>-->
           <AMCInputEnableList xsi:type="xsd:string">2</AMCInputEnableList>
           <AMCIgnoreTTSList   xsi:type="xsd:string">1,3-12</AMCIgnoreTTSList>
@@ -83,15 +84,15 @@
           </AMC13TTCConfig>
 
           <BGOConfig xsi:type="soapenc:Array"  soapenc:arrayType="xsd:ur-type[4]">
-            <!--
-                <BGOInfo xsi:type="soapenc:Struct" soapenc:position="0">
+            
+            <BGOInfo xsi:type="soapenc:Struct" soapenc:position="0">
 	        <BGOChannel  xsi:type="xsd:integer">0</BGOChannel>
 	        <BGOcmd      xsi:type="xsd:unsignedInt">0x14</BGOcmd>
-	        <BGObx       xsi:type="xsd:unsignedInt">0x1</BGObx>
+	        <BGObx       xsi:type="xsd:unsignedInt">450</BGObx><!--default should be 50 after the bx of L1A, that forL1Amode=1 happens at 500-->  <!--0x1-->
 	        <BGOprescale xsi:type="xsd:unsignedInt">0x1</BGOprescale>
 	        <BGOrepeat   xsi:type="xsd:boolean">true</BGOrepeat>
-                </BGOInfo>
-            -->
+        </BGOInfo>
+          
           </BGOConfig>
           <PrescaleFactor xsi:type="xsd:integer">1</PrescaleFactor>
           <BCOffset       xsi:type="xsd:integer">1</BCOffset>
@@ -102,13 +103,14 @@
         </amc13ConfigParams>
       </properties>
     </xc:Application>
-
+    
     <xc:Application class="gem::hw::amc13::AMC13Readout" id="260" instance="0" network="local">
       <properties xmlns="urn:xdaq-application:gem::hw::amc13::AMC13Readout"
-		  xsi:type="soapenc:Struct">
-        <ConnectionFile  xsi:type="xsd:string">connections.xml</ConnectionFile>
+	  xsi:type="soapenc:Struct">
+        <ConnectionFile     xsi:type="xsd:string">connections.xml</ConnectionFile>
+        <CardName           xsi:type="xsd:string">gem.shelf01.amc13</CardName>
+        
         <DeviceName      xsi:type="xsd:string">AMC13</DeviceName>
-        <CardName        xsi:type="xsd:string">gem.shelf01.amc13</CardName>
         <crateID         xsi:type="xsd:integer">1</crateID>
         <slot            xsi:type="xsd:integer">13</slot>
         <ReadoutSettings xsi:type="soapenc:Struct">
@@ -120,7 +122,7 @@
         </ReadoutSettings>
       </properties>
     </xc:Application>
-
+   
     <xc:Application class="gem::supervisor::GEMSupervisor" id="16" instance="0" network="local">
       <properties xmlns="urn:xdaq-application:GEMSupervisor"
 		  xsi:type="soapenc:Struct">
@@ -175,17 +177,17 @@
       <properties xmlns="urn:xdaq-application:gem::hw::optohybrid::OptoHybridManager"
         	  xsi:type="soapenc:Struct">
         <!--AMCSlots       xsi:type="xsd:string">10</AMCSlots-->
-        <ConnectionFile xsi:type="xsd:string">connections_ch.xml</ConnectionFile>
+        <ConnectionFile xsi:type="xsd:string">connections.xml</ConnectionFile>
         <AllOptoHybridsInfo xsi:type="soapenc:Array"  soapenc:arrayType="xsd:ur-type[108]">
           <OptoHybridInfo   xsi:type="soapenc:Struct" soapenc:position="12"> <!-- position must be (slot-1)*12+link -->
             <crateID xsi:type="xsd:integer">1</crateID>
             <slot    xsi:type="xsd:integer">2</slot>
             <link    xsi:type="xsd:integer">0</link>
             <present xsi:type="xsd:boolean">true</present>
-            <CardName xsi:type="xsd:string">gem.shelf01.ctp7-02.optohybrid00</CardName>
+           <!-- <CardName xsi:type="xsd:string">gem.shelf01.ctp7-02.optohybrid00</CardName>-->
 
-            <triggerSource xsi:type="xsd:integer">0</triggerSource>
-            <sbitSource    xsi:type="xsd:integer">5</sbitSource>
+            <!--<triggerSource xsi:type="xsd:integer">0</triggerSource>-->
+            <!--<sbitSource    xsi:type="xsd:integer">5</sbitSource>-->
           </OptoHybridInfo>
         </AllOptoHybridsInfo>
       </properties>
