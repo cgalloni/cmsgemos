@@ -3,7 +3,7 @@
 	      xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
 	      xmlns:xc="http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30">
 
-  <xc:Context url="http://gem904daq04:20501">
+  <xc:Context url="http://gem904daq01:20502">
     <xc:Application class="gem::hw::glib::GLIBManager" id="30" instance="0" network="local">
       <properties xmlns="urn:xdaq-application:gem::hw::glib::GLIBManager"
 		  xsi:type="soapenc:Struct">
@@ -88,7 +88,7 @@
             <BGOInfo xsi:type="soapenc:Struct" soapenc:position="0">
 	        <BGOChannel  xsi:type="xsd:integer">0</BGOChannel>
 	        <BGOcmd      xsi:type="xsd:unsignedInt">0x14</BGOcmd>
-	        <BGObx       xsi:type="xsd:unsignedInt">450</BGObx><!--default should be 50 after the bx of L1A, that forL1Amode=1 happens at 500-->  <!--0x1-->
+	        <BGObx       xsi:type="xsd:unsignedInt">450</BGObx><!--450default should be 50 after the bx of L1A, that forL1Amode=1 happens at 500-->  <!--0x1-->
 	        <BGOprescale xsi:type="xsd:unsignedInt">0x1</BGOprescale>
 	        <BGOrepeat   xsi:type="xsd:boolean">true</BGOrepeat>
         </BGOInfo>

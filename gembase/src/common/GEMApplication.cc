@@ -348,7 +348,7 @@ xoap::MessageReference gem::base::GEMApplication::calibParamRetrieve(xoap::Messa
     m_scanInfo.bag.pulseDelay = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"pulseDelay");
     m_scanInfo.bag.latency = gem::utils::soap::GEMSOAPToolBox::extractSOAPCommandParameterInteger(msg,"latency");
     //xdata::Boolean calMode_loc = true;
-    m_scanInfo.bag.calMode = (xdata::Boolean) true;
+    m_scanInfo.bag.calMode = (xdata::Boolean)  true;
   
      
     return 

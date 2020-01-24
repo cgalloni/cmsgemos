@@ -530,7 +530,8 @@ namespace gem {
            * @brief Returns the slot number and chip IDs for connected VFATs
            * @returns a std::vector of pairs of uint8_t and uint32_t words, one response for each VFAT
            */
-          std::vector<std::pair<uint8_t, uint32_t> > getConnectedVFATs(bool update=false);
+          std::vector<std::pair<uint8_t, uint32_t> > getConnectedVFATs(bool update=false, uint32_t mask=0x0);
+          //std::vector<std::pair<uint8_t, uint32_t> > getConnectedVFATs(bool update=false);
 
           /**
            * @brief Uses a broadcast read to determine which slots are occupied and returns the

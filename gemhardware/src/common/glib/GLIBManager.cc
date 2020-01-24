@@ -389,6 +389,9 @@ void gem::hw::glib::GLIBManager::configureAction()
           amc->setDAQLinkRunType(0x2);
           //amc->setDAQLinkRunParameter(0x1,m_scanInfo.bag.scanMin.value_); ///CG is the latency the 1st parameter to be written? shall it be done like this? I don't see DAQ.EXT_CONTROL.RUN_PARAM1 among the registers
 
+          uint32_t runParams = ( (0x1 << 22) | (0x0 << 21) | (0x6 << 13) | ((m_scanInfo.bag.mspl.value_ & 0x7) << 10) | (m_scanInfo.bag.scanMin.value_) );
+          CMSGEMOS_INFO("GLIBManager::configureAction AMC runParams :" << runParams );  //CG: TO be removed
+          amc->setDAQLinkRunParameters(runParams);
           CMSGEMOS_INFO("GLIBManager::configureAction::  m_scanInfo.bag.calMode.value_ " << m_scanInfo.bag.calMode.value_);///CG remove 
           //If calibration format mode invoked for data
           if(  m_scanInfo.bag.calMode.value_ ==

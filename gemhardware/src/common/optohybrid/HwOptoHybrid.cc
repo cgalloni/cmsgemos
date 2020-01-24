@@ -233,7 +233,7 @@ void gem::hw::optohybrid::HwOptoHybrid::broadcastWrite(std::string const& name,
 }
 
 
-std::vector<std::pair<uint8_t, uint32_t> > gem::hw::optohybrid::HwOptoHybrid::getConnectedVFATs(bool update)
+std::vector<std::pair<uint8_t, uint32_t> > gem::hw::optohybrid::HwOptoHybrid::getConnectedVFATs(bool update, uint32_t mask)
 {
     CMSGEMOS_INFO("HwOptoHybrid::getConnectedVFATs puppa1 " );//CG
     // FIXME UPDATE WITH NEW COMM PROTOCOL
@@ -247,7 +247,7 @@ std::vector<std::pair<uint8_t, uint32_t> > gem::hw::optohybrid::HwOptoHybrid::ge
         try {
             req = wisc::RPCMsg("vfat3.getVFAT3ChipIDs");
             req.set_word("ohN",   static_cast<uint32_t>(m_link));
-            req.set_word("vfatMask",  0x0); // FIXME mandatory, need to redesign ctp7_modules
+            req.set_word("vfatMask",  mask); // FIXME mandatory, need to redesign ctp7_modules
             req.set_word("rawID", false);
             try {
                 rsp = rpc.call_method(req);

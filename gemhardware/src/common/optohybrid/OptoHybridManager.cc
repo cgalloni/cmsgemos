@@ -173,14 +173,21 @@ void gem::hw::optohybrid::OptoHybridManager::initializeAction()
       // if (!info.present.value_) continue;
       // p_gemWebInterface->optohybridInSlot(slot);
 
-      CMSGEMOS_INFO("OptoHybridManager::initializeAction grabbing pointer to hardware device"); ///CG: was DEBUG
+      CMSGEMOS_DEBUG("OptoHybridManager::initializeAction grabbing pointer to hardware device"); ///CG: was DEBUG
       auto&& optohybrid = m_optohybrids.at(slot).at(link);
 
       if (optohybrid->isHwConnected()) {
-        m_vfatMapping.at(slot).at(link)   = optohybrid->getConnectedVFATs(true);
+          
+          //m_vfatMapping.at(slot).at(link)   = optohybrid->getConnectedVFATs(true);
 
-        m_broadcastList.at(slot).at(link) = ~(optohybrid->getConnectedVFATMask(true));
-        
+          //m_broadcastList.at(slot).at(link) = ~(optohybrid->getConnectedVFATMask(true));
+          ///CG change function to get chip Ids only for connected VFATs
+          m_broadcastList.at(slot).at(link) = ~(optohybrid->getConnectedVFATMask(true));
+          CMSGEMOS_INFO("OptoHybridManager::initializeAction getConnectedVFATMask "<<m_broadcastList.at(slot).at(link)); 
+          m_vfatMapping.at(slot).at(link)   = optohybrid->getConnectedVFATs(true,m_broadcastList.at(slot).at(link));
+
+          
+          
         m_trackingMask.at(slot).at(link)  = m_broadcastList.at(slot).at(link);
         m_sbitMask.at(slot).at(link)      = m_broadcastList.at(slot).at(link);
 
@@ -334,19 +341,27 @@ void gem::hw::optohybrid::OptoHybridManager::configureAction()
               optohybrid->broadcastWrite("CFG_CAL_MODE", 0x1 ,vfatMask, false);
               ///for latency scans use the Voltage pulse(CAL_MODE 0x1), low CFG_CAL_DAC is a high injected charge amount  
               int caldac = 250;
+              
               optohybrid->broadcastWrite("CFG_CAL_DAC", 256 - caldac, vfatMask, false);
 
               CMSGEMOS_INFO("OptoHybridManager::configureAction:  specifics for latency on OH0VFAT23 CFG_CAL_PHI " << m_scanInfo.bag.pulseDelay.value_ <<" reg " << optohybrid->readReg("GEM_AMC.OH.OH0.GEB.VFAT23.CFG_CAL_PHI") << ";MPSL " <<  m_scanInfo.bag.mspl.value_ << " reg " << optohybrid->readReg("GEM_AMC.OH.OH0.GEB.VFAT23.CFG_PULSE_STRETCH") << " CAL_DAC " <<  (uint32_t) optohybrid->readReg("GEM_AMC.OH.OH0.GEB.VFAT23.CFG_CAL_DAC")); 
           }
 
           /// CG: da giovanni 
-          optohybrid->broadcastWrite("CFG_RES_PRE", 0x2, vfatMask, false);
-          optohybrid->broadcastWrite("CFG_CAP_PRE", 0x1, vfatMask, false);
-          optohybrid->broadcastWrite("CFG_PT", 0xf, vfatMask, false);
-          optohybrid->broadcastWrite("CFG_FP_FE", 0x7, vfatMask, false);
+          //optohybrid->broadcastWrite("CFG_RES_PRE", 0x2, vfatMask, false);
+          //optohybrid->broadcastWrite("CFG_CAP_PRE", 0x1, vfatMask, false);
+          //optohybrid->broadcastWrite("CFG_PT", 0xf, vfatMask, false);
+          //optohybrid->broadcastWrite("CFG_FP_FE", 0x7, vfatMask, false);
 
-          ///enabling calpulse for channels on vfat mask
+          ///disabling calpulse for channels on vfat mask
           for (int ch=0; ch< 128 ; ++ch){
+              char reg [100] ;
+              sprintf(reg, "VFAT_CHANNELS.CHANNEL%i.CALPULSE_ENABLE", ch);
+              optohybrid->broadcastWrite(reg, 0, vfatMask, false);
+          }
+           
+          ///enabling calpulse for channels on vfat mask
+          for (int ch=0; ch< 1; ch++){//128 ; ++ch){
               char reg [100] ;
               sprintf(reg, "VFAT_CHANNELS.CHANNEL%i.CALPULSE_ENABLE", ch);
               optohybrid->broadcastWrite(reg, 1, vfatMask, false);

@@ -279,7 +279,7 @@ void gem::supervisor::GEMSupervisor::initializeAction()
     CMSGEMOS_INFO("GEMSupervisor::initializeAction global state not in " << gem::base::STATE_INITIAL
                   << " sleeping (" << m_globalState.getStateName() << ","
                   << getCurrentState() << ")");
-    usleep(100);
+    usleep(10);
     m_globalState.update();
   }
 
@@ -1348,9 +1348,11 @@ xoap::MessageReference gem::supervisor::GEMSupervisor::EndScanPoint(xoap::Messag
     fireEvent("Pause");
 
     while (!(m_globalState.getStateName() == "Paused" && getCurrentState() == "Paused")) {
-      CMSGEMOS_TRACE("GEMSupervisor::EndScanPoint GlobalState = " << m_globalState.getStateName()
+      CMSGEMOS_INFO("GEMSupervisor::EndScanPoint GlobalState = " << m_globalState.getStateName()
                      << " FSM state " << getCurrentState());
-      usleep(10);
+      //CMSGEMOS_TRACE("GEMSupervisor::EndScanPoint GlobalState = " << m_globalState.getStateName()
+      //              << " FSM state " << getCurrentState());
+      usleep(100);
       m_globalState.update();
     }
 
@@ -1361,9 +1363,12 @@ xoap::MessageReference gem::supervisor::GEMSupervisor::EndScanPoint(xoap::Messag
 
     m_scanParameter = updatedParameter;
     while (!(m_globalState.getStateName() == "Running" && getCurrentState() == "Running")) {
-      CMSGEMOS_TRACE("GEMSupervisor::EndScanPoint GlobalState = " << m_globalState.getStateName()
+        CMSGEMOS_TRACE("GEMSupervisor::EndScanPoint GlobalState = " << m_globalState.getStateName()
                      << " FSM state " << getCurrentState());
-      usleep(10);
+
+        //CG:remove info CMSGEMOS_INFO("GEMSupervisor::EndScanPoint GlobalState = " << m_globalState.getStateName()
+        //                           << " FSM state " << getCurrentState());
+        usleep(10);
       m_globalState.update();
     }
   } else {

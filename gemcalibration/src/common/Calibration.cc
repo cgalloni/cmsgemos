@@ -327,7 +327,7 @@ void gem::calib::Calibration::sendSOAPMessageForCalibration() {
             CMSGEMOS_INFO("GEMCalibration:::init::xDAQ group: " << *i
                       << " allApp class name " << (*j)->getClassName());
             
-            if ((((*j)->getClassName()).rfind("GLIBManager") != std::string::npos) || (((*j)->getClassName()).rfind("AMC13Manager") != std::string::npos) || (((*j)->getClassName()).rfind("GEMSupervisor") != std::string::npos)) {
+            //if ((((*j)->getClassName()).rfind("GLIBManager") != std::string::npos) || (((*j)->getClassName()).rfind("AMC13Manager") != std::string::npos) || (((*j)->getClassName()).rfind("GEMSupervisor") != std::string::npos)) { ///CG: OHManager????
 
                  // if (((*j)->getClassName()).rfind("GEMApplication") != std::string::npos) {
                        
@@ -355,7 +355,7 @@ void gem::calib::Calibration::sendSOAPMessageForCalibration() {
                 
                 //gem::utils::soap::GEMSOAPToolBox::sendCommandWithParameterBag(command2, bagFromMap, p_appContext, p_appDescriptor, app);
       
-                }
+                // }
                     
         }
     }
