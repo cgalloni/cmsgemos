@@ -982,3 +982,9 @@ void gem::hw::HwGenericAMC::linkReset(uint8_t const& gtx)
   linkCounterReset();
   return;
 }
+
+void gem::hw::HwGenericAMC::configureAMCCalDataFormat(bool en)
+{   
+    writeReg(getDeviceBaseNode(), "DAQ.CONTROL.CALIBRATION_MODE_EN", uint32_t(en));
+    return;
+}

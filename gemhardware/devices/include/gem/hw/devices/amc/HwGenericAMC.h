@@ -494,7 +494,12 @@ namespace gem {
          */
         void setDAQLinkRunParameter(uint8_t const& parameter, uint8_t const& value);
 
+        /**
+         * @brief set calibration data format of VFAT data
+         */
+        void configureAMCCalDataFormat(bool en);
 
+        
         /**************************/
         /** TTC module information **/
         /**************************/
@@ -764,6 +769,8 @@ namespace gem {
 
         std::string m_boardID;  ///< expected boardID in the firmware
 
+        
+        
       private:
         // Do not use default constructor. HwGenericAMC object should only be made using
         // either connection file method or with a list of URIs and address tables
